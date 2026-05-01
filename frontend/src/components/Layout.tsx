@@ -49,11 +49,8 @@ export default function Layout({ children }: LayoutProps) {
         {/* Logo */}
         <div className="h-16 px-6 flex items-center border-b border-gray-200 dark:border-gray-800">
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-semibold text-gray-900 dark:text-white">
-              Alo ActivationOS
+            <span className="font-semibold text-gray-900 dark:text-white text-[14px] tracking-tight">
+              ActivationOS
             </span>
           </Link>
         </div>

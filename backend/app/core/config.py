@@ -1,6 +1,7 @@
 """Application configuration with cloud-agnostic settings."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional, Literal, List
 from pydantic_settings import BaseSettings
 from pydantic import Field
@@ -82,7 +83,7 @@ class Settings(BaseSettings):
 
     # dbt / DuckDB transform store
     dbt_duckdb_path: str = Field(
-        default="/Users/utkarshparekh/BridgeSync/platform/dbt/activationos_transform.duckdb",
+        default=str((Path(__file__).resolve().parents[4] / "platform" / "dbt" / "activationos_transform.duckdb")),
         description="Path to dbt DuckDB file used for marts"
     )
     

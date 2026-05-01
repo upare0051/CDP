@@ -12,4 +12,4 @@ select
     created_at,
     updated_at,
     created_by
-from {{ source('bridgesync', 'segments') }}
+from {{ source('activationos', 'segments') }}

@@ -21,7 +21,7 @@ API_BASE = "http://localhost:8000/api/v1"
 
 def main():
     print("=" * 60)
-    print("BridgeSync Local Test Setup")
+    print("Alo ActivationOS Local Test Setup")
     print("=" * 60)
     
     # Step 1: Create DuckDB Source

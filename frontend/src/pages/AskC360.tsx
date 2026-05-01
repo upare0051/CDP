@@ -192,7 +192,7 @@ export default function AskC360() {
                 label="Question"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask a business question about your C360 data…"
+                  placeholder="Ask a business question about C360 data…"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') send();
                 }}

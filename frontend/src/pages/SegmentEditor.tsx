@@ -349,7 +349,7 @@ export default function SegmentEditor() {
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && aiPrompt.trim() && aiMutation.mutate(aiPrompt)}
-                    placeholder="Describe your audience in plain English..."
+                    placeholder="Describe an audience in plain English..."
                     className={cn(
                       "flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg",
                       "text-gray-900 dark:text-gray-100 placeholder:text-gray-400",

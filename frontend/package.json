@@ -1,7 +1,7 @@
 {
-  "name": "bridgesync-frontend",
+  "name": "alo-activationos-frontend",
   "version": "1.0.0",
-  "description": "BridgeSync - Reverse ETL Platform UI",
+  "description": "Alo ActivationOS - Reverse ETL Platform UI",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -10,4 +10,4 @@ select
     destination_connection_id,
     sync_run_id,
     occurred_at
-from {{ source('bridgesync', 'customer_events') }}
+from {{ source('activationos', 'customer_events') }}

@@ -1,9 +1,9 @@
 version: 2
 
 sources:
-  - name: bridgesync
-    database: "{{ env_var('DBT_BRIDGESYNC_SOURCE_DATABASE', 'bridgesync_src') }}"
-    schema: "{{ env_var('DBT_BRIDGESYNC_SCHEMA', 'main') }}"
+  - name: activationos
+    database: "{{ env_var('DBT_ACTIVATIONOS_SOURCE_DATABASE', 'activationos_src') }}"
+    schema: "{{ env_var('DBT_ACTIVATIONOS_SCHEMA', 'main') }}"
     description: "Application source schema for Alo ActivationOS."
     tables:
       - name: customer_profiles

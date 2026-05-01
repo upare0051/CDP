@@ -11,4 +11,4 @@ select
     last_synced_at,
     created_at,
     updated_at
-from {{ source('bridgesync', 'customer_profiles') }}
+from {{ source('activationos', 'customer_profiles') }}

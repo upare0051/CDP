@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Import Kaggle Customer 360 Dataset into BridgeSync
+Import Kaggle Customer 360 Dataset into Alo ActivationOS
 
 This script loads the rich customer dataset and populates:
 - Customer profiles with demographics
@@ -412,7 +412,7 @@ def main():
     customer_limit = None if args.customers == -1 else args.customers
     
     print("=" * 60)
-    print("🚀 BridgeSync - Kaggle Customer 360 Import")
+    print("🚀 Alo ActivationOS - Kaggle Customer 360 Import")
     print("=" * 60)
     print(f"\nConfiguration:")
     print(f"  Customers: {customer_limit or 'ALL'}")

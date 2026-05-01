@@ -1,5 +1,5 @@
 """
-BridgeSync Airflow DAG for dbt transformations.
+Alo ActivationOS Airflow DAG for dbt transformations.
 
 Runs dbt staging/intermediate/mart models and tests on a schedule.
 """
@@ -13,18 +13,18 @@ from airflow.models import Variable
 
 
 DBT_PROJECT_DIR = Variable.get(
-    "bridgesync_dbt_project_dir",
-    default_var="/Users/utkarshparekh/BridgeSync/platform/dbt",
+    "activationos_dbt_project_dir",
+    default_var="platform/dbt",
 )
 
 DBT_PROFILES_DIR = Variable.get(
-    "bridgesync_dbt_profiles_dir",
+    "activationos_dbt_profiles_dir",
     default_var="/Users/utkarshparekh/.dbt",
 )
 
 
 default_args = {
-    "owner": "bridgesync",
+    "owner": "activationos",
     "depends_on_past": False,
     "email_on_failure": False,
     "retries": 1,
@@ -33,13 +33,13 @@ default_args = {
 
 
 dag = DAG(
-    dag_id="bridgesync_dbt_transform",
+    dag_id="activationos_dbt_transform",
     default_args=default_args,
-    description="Run dbt transformations for ActivationOS marts",
+    description="Run dbt transformations for Alo ActivationOS marts",
     schedule_interval="15 * * * *",  # Hourly at :15
     start_date=days_ago(1),
     catchup=False,
-    tags=["bridgesync", "dbt", "transform"],
+    tags=["activationos", "dbt", "transform"],
 )
 
 
@@ -65,3 +65,4 @@ with dag:
     )
 
     dbt_deps >> dbt_staging >> dbt_intermediate >> dbt_marts
+

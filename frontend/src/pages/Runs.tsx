@@ -180,7 +180,7 @@ export default function Runs() {
           <EmptyState
             icon={<History className="w-8 h-8" />}
             title="No run history"
-            description="Run your first sync to see execution history here."
+            description="Run the first sync to see execution history here."
           />
         </Card>
       )}

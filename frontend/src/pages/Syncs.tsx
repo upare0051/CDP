@@ -221,7 +221,7 @@ export default function Syncs() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-surface-50 mb-2">Syncs</h1>
-          <p className="text-surface-400">Manage your data sync jobs</p>
+          <p className="text-surface-400">Manage data sync jobs</p>
         </div>
         <Button icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
           Create Sync
@@ -326,7 +326,7 @@ export default function Syncs() {
           <EmptyState
             icon={<RefreshCw className="w-8 h-8" />}
             title="No sync jobs configured"
-            description="Create your first sync to start moving data from your warehouse to destinations."
+            description="Create the first sync job to move data from the warehouse to destinations."
             action={
               <Button icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
                 Create Sync

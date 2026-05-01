@@ -3,4 +3,4 @@ select
     segment_id,
     customer_id,
     computed_at
-from {{ source('bridgesync', 'segment_memberships') }}
+from {{ source('activationos', 'segment_memberships') }}

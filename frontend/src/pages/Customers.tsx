@@ -227,7 +227,7 @@ export default function Customers() {
             description={
               searchQuery
                 ? "No customers match your search. Try a different query."
-                : "Customer profiles will appear here after running your first sync job."
+                : "Customer profiles will appear here after the first sync run."
             }
           />
         </Card>

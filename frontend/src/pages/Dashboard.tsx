@@ -58,7 +58,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Welcome back! Here's what's happening with your customer data.
+            Overview of the latest customer data and sync activity.
           </p>
         </div>
         <Link to="/segments/new">
@@ -207,7 +207,7 @@ export default function Dashboard() {
                 <Users2 className="w-8 h-8 mx-auto mb-3 opacity-50" />
                 <p>No segments created yet</p>
                 <Link to="/segments/new" className="text-primary-600 dark:text-primary-400 hover:underline text-sm mt-2 inline-block">
-                  Create your first segment
+                  Create the first segment
                 </Link>
               </div>
             )}
@@ -315,7 +315,7 @@ export default function Dashboard() {
               <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 <Zap className="w-8 h-8 mx-auto mb-3 opacity-50" />
                 <p>No activations yet</p>
-                <p className="text-sm mt-1">Activate a segment to sync it to your tools</p>
+                <p className="text-sm mt-1">Activate a segment to sync it to destinations</p>
               </div>
             )}
           </CardContent>

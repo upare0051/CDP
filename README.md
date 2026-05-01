@@ -1,4 +1,4 @@
-# BridgeSync - Reverse ETL Platform
+# Alo ActivationOS - Reverse ETL Platform
 
 A production-style MVP for a Reverse ETL platform that syncs customer data from data warehouses (Redshift/DuckDB) to marketing platforms (Braze/Attentive).
 
@@ -30,7 +30,7 @@ Current production runtime remains on existing folders (`frontend/`, `backend/`)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        BridgeSync                                │
+│                    Alo ActivationOS                               │
 ├─────────────────────────────────────────────────────────────────┤
 │  Frontend (React)                                                │
 │  └── Dashboard, Sources, Destinations, Syncs, Runs              │
@@ -110,7 +110,7 @@ airflow users create \
     --password admin
 
 # Set Airflow variables
-airflow variables set bridgesync_api_url http://localhost:8000/api/v1
+airflow variables set activationos_api_url http://localhost:8000/api/v1
 
 # Copy DAGs
 cp airflow/dags/*.py $AIRFLOW_HOME/dags/
@@ -221,7 +221,7 @@ The dbt project produces marts for:
 ## Project Structure
 
 ```
-BridgeSync/
+Alo ActivationOS/
 ├── backend/
 │   ├── app/
 │   │   ├── adapters/

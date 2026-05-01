@@ -1,4 +1,4 @@
-"""BridgeSync - FastAPI Application Entry Point."""
+"""Alo ActivationOS - FastAPI Application Entry Point."""
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -31,7 +31,7 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
-    logger.info("Starting BridgeSync", env=settings.app_env)
+    logger.info("Starting Alo ActivationOS", env=settings.app_env)
     
     # Create database tables
     Base.metadata.create_all(bind=engine)
@@ -63,7 +63,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("Shutting down BridgeSync")
+    logger.info("Shutting down Alo ActivationOS")
 
 
 # Create FastAPI app

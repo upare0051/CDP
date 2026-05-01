@@ -149,7 +149,7 @@ export default function FilterBuilder({ value, onChange, className }: FilterBuil
       {value.filters.length === 0 && (
         <div className="py-8 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            No filters added yet. Add filters to define your audience.
+            No filters added yet. Add filters to define an audience.
           </p>
           <Button onClick={addFilter} variant="secondary" size="sm">
             <Plus className="w-4 h-4" />

@@ -160,7 +160,7 @@ export default function Segments() {
           icon={<Filter className="w-8 h-8" />}
           title="No segments found"
           description={
-            search ? 'Try adjusting your search or filters' : 'Create your first segment to start targeting audiences'
+            search ? 'Try adjusting the search or filters' : 'Create the first segment to start targeting audiences'
           }
           action={
             !search && (

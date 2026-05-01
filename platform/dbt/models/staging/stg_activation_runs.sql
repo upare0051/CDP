@@ -12,4 +12,4 @@ select
     duration_seconds,
     error_message,
     error_details
-from {{ source('bridgesync', 'activation_runs') }}
+from {{ source('activationos', 'activation_runs') }}

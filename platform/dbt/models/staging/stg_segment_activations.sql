@@ -11,4 +11,4 @@ select
     total_synced,
     created_at,
     updated_at
-from {{ source('bridgesync', 'segment_activations') }}
+from {{ source('activationos', 'segment_activations') }}

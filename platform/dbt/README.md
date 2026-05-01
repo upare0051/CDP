@@ -1,6 +1,6 @@
 # Alo ActivationOS dbt Transformations
 
-This project defines the transformation layer for Alo ActivationOS / BridgeSync.
+This project defines the transformation layer for Alo ActivationOS.
 
 It turns application tables (`customer_profiles`, `customer_attributes`, `segments`, `segment_activations`, etc.) into analytics-ready marts for:
 
@@ -41,14 +41,14 @@ dbt deps
 cp profiles.yml.example ~/.dbt/profiles.yml
 ```
 
-3. Set environment variables for DuckDB + attached BridgeSync SQLite DB:
+3. Set environment variables for DuckDB + attached ActivationOS SQLite DB:
 
 ```bash
-export DBT_DUCKDB_PATH=/Users/utkarshparekh/BridgeSync/platform/dbt/activationos_transform.duckdb
+export DBT_DUCKDB_PATH=platform/dbt/activationos_transform.duckdb
 export DBT_DUCKDB_SCHEMA=main
-export DBT_BRIDGESYNC_SQLITE_PATH=/Users/utkarshparekh/BridgeSync/backend/bridgesync.db
-export DBT_BRIDGESYNC_SOURCE_DATABASE=bridgesync_src
-export DBT_BRIDGESYNC_SCHEMA=main
+export DBT_ACTIVATIONOS_SQLITE_PATH=activationos.db
+export DBT_ACTIVATIONOS_SOURCE_DATABASE=activationos_src
+export DBT_ACTIVATIONOS_SCHEMA=main
 ```
 
 4. Run models and tests:

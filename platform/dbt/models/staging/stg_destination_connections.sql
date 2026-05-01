@@ -8,4 +8,4 @@ select
     is_active,
     created_at,
     updated_at
-from {{ source('bridgesync', 'destination_connections') }}
+from {{ source('activationos', 'destination_connections') }}

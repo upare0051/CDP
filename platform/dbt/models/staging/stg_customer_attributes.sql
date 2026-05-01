@@ -9,4 +9,4 @@ select
     confidence_score,
     created_at,
     updated_at
-from {{ source('bridgesync', 'customer_attributes') }}
+from {{ source('activationos', 'customer_attributes') }}

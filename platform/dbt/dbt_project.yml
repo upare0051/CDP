@@ -40,5 +40,5 @@ models:
         +materialized: table
 
 vars:
-  bridgesync_source_database: "{{ env_var('DBT_BRIDGESYNC_SOURCE_DATABASE', 'bridgesync_src') }}"
-  bridgesync_source_schema: "{{ env_var('DBT_BRIDGESYNC_SCHEMA', 'main') }}"
+  activationos_source_database: "{{ env_var('DBT_ACTIVATIONOS_SOURCE_DATABASE', 'activationos_src') }}"
+  activationos_source_schema: "{{ env_var('DBT_ACTIVATIONOS_SCHEMA', 'main') }}"

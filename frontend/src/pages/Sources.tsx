@@ -93,7 +93,7 @@ export default function Sources() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-surface-50 mb-2">Sources</h1>
-          <p className="text-surface-400">Connect to your data warehouses</p>
+          <p className="text-surface-400">Connect data warehouses</p>
         </div>
         <Button icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
           Add Source
@@ -179,7 +179,7 @@ export default function Sources() {
           <EmptyState
             icon={<Database className="w-8 h-8" />}
             title="No sources configured"
-            description="Add your first data warehouse connection to start syncing data."
+            description="Add the first warehouse connection to start syncing data."
             action={
               <Button icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
                 Add Source

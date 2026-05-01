@@ -45,7 +45,7 @@ def get_database_url() -> str:
     
     # Final fallback: SQLite for quick local development
     # Avoid noisy stdout in scripts/imports; the app can still run with SQLite locally.
-    return "sqlite:///./bridgesync.db"
+    return "sqlite:///./activationos.db"
 
 
 # Get the database URL

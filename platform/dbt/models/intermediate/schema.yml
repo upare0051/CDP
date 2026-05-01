@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: int_customer_attributes_pivot
+    description: "Pivoted customer attributes into analytics-friendly columns."
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('stg_customer_profiles')
+              field: customer_id

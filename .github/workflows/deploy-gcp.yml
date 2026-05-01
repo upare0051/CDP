@@ -1,0 +1,73 @@
+name: Deploy to GCP (Cloud Run)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  AR_REPO: ${{ secrets.GCP_ARTIFACT_REPO }}
+  BACKEND_SERVICE: activationos-backend
+  FRONTEND_SERVICE: activationos-frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push backend image
+        run: |
+          BACKEND_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPO}/activationos-backend:${GITHUB_SHA}"
+          docker build -f docker/backend.Dockerfile -t "$BACKEND_IMAGE" .
+          docker push "$BACKEND_IMAGE"
+          echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> $GITHUB_ENV
+
+      - name: Build and push frontend image
+        run: |
+          FRONTEND_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPO}/activationos-frontend:${GITHUB_SHA}"
+          docker build -f docker/frontend.prod.Dockerfile \
+            --build-arg VITE_API_BASE_URL="${{ secrets.VITE_API_BASE_URL }}" \
+            -t "$FRONTEND_IMAGE" .
+          docker push "$FRONTEND_IMAGE"
+          echo "FRONTEND_IMAGE=$FRONTEND_IMAGE" >> $GITHUB_ENV
+
+      - name: Deploy backend Cloud Run
+        run: |
+          gcloud run deploy "${BACKEND_SERVICE}" \
+            --image "${BACKEND_IMAGE}" \
+            --region "${REGION}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "APP_ENV=production,API_HOST=0.0.0.0,API_PORT=8000" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,ENCRYPTION_KEY=ENCRYPTION_KEY:latest,PUBLIC_DEMO_URL=PUBLIC_DEMO_URL:latest"
+
+      - name: Deploy frontend Cloud Run
+        run: |
+          gcloud run deploy "${FRONTEND_SERVICE}" \
+            --image "${FRONTEND_IMAGE}" \
+            --region "${REGION}" \
+            --platform managed \
+            --allow-unauthenticated

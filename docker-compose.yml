@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Database - PostgreSQL (Cloud-agnostic: works with AWS RDS, GCP Cloud SQL)
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: activationos
+      POSTGRES_PASSWORD: activationos
+      POSTGRES_DB: activationos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U activationos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # Cache & Queue - Redis (Cloud-agnostic: works with AWS ElastiCache, GCP Memorystore)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # =============================================================================
+  # Object Storage - MinIO (S3-compatible: works with AWS S3, GCP GCS)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Create default bucket on startup
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/activationos --ignore-existing;
+      mc anonymous set public myminio/activationos;
+      exit 0;
+      "
+
+  # =============================================================================
+  # Backend API - FastAPI
+  # =============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # App
+      - APP_NAME=Alo ActivationOS
+      - APP_ENV=development
+      - DEBUG_MODE=true
+      # Database
+      - DATABASE_URL=postgresql://activationos:activationos@postgres:5432/activationos
+      # Redis
+      - REDIS_URL=redis://redis:6379
+      # Storage (S3-compatible)
+      - STORAGE_ENDPOINT=http://minio:9000
+      - STORAGE_ACCESS_KEY=minioadmin
+      - STORAGE_SECRET_KEY=minioadmin
+      - STORAGE_BUCKET=activationos
+      - STORAGE_USE_SSL=false
+      # AI
+      # Ask C360 uses an Ollama host process
+      # Demo data source
+      - WAREHOUSE_MODE=duckdb
+      - "DUCKDB_PATH=:memory:"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+    working_dir: /app
+    command: python main.py
+
+  # =============================================================================
+  # Background Worker - Celery (for async jobs)
+  # =============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://activationos:activationos@postgres:5432/activationos
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_ENDPOINT=http://minio:9000
+      - STORAGE_ACCESS_KEY=minioadmin
+      - STORAGE_SECRET_KEY=minioadmin
+      - STORAGE_BUCKET=activationos
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: echo "Worker placeholder - Celery to be added"
+    profiles:
+      - worker  # Only start with: docker-compose --profile worker up
+
+  # =============================================================================
+  # Frontend - React + Vite
+  # =============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

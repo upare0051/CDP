@@ -1,0 +1,123 @@
+/* Reference page styles (ported from c360-leadership-frontend/app.css)
+   Scoped to `.ref-page` / `.ref-*` / `.c360-datagrid-*` to avoid affecting the rest of the app. */
+
+.ref-page { max-width: 1440px; margin: 0 auto; }
+
+.ref-hero {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #fff; border-radius: 16px; padding: 40px 36px 32px;
+  margin-bottom: 24px;
+}
+.ref-hero h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+.ref-hero-sub { color: #cbd5e1; font-size: 15px; margin: 0 0 24px; max-width: 640px; line-height: 1.55; }
+.ref-stats-row { display: flex; gap: 32px; flex-wrap: wrap; }
+.ref-stat { display: flex; flex-direction: column; }
+.ref-stat-num { font-size: 28px; font-weight: 700; }
+.ref-stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+
+.ref-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.ref-search {
+  padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;
+  background: #fff; width: 100%; max-width: 420px;
+}
+.ref-search:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.ref-cat-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.ref-cat-pill {
+  padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; background: #fff;
+  font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px;
+  transition: all .15s;
+}
+.ref-cat-pill:hover { border-color: #3b82f6; color: #3b82f6; }
+.ref-cat-pill.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.ref-cat-icon { font-size: 15px; }
+
+.ref-layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start; }
+.ref-sidebar-nav {
+  position: sticky; top: 16px; background: #fff; border-radius: 12px;
+  border: 1px solid #e2e8f0; padding: 16px 12px; max-height: calc(100vh - 40px);
+  overflow-y: auto; font-size: 13px;
+}
+.ref-sidebar-section { margin-bottom: 16px; }
+.ref-sidebar-title { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; margin-bottom: 8px; font-weight: 600; }
+.ref-sidebar-group { margin-bottom: 12px; }
+.ref-sidebar-cat { font-weight: 600; color: #475569; margin-bottom: 4px; font-size: 12px; }
+.ref-sidebar-model-link {
+  display: block; padding: 3px 8px; color: #64748b; text-decoration: none;
+  border-radius: 4px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.ref-sidebar-model-link:hover { background: #f1f5f9; color: #1e293b; }
+
+.ref-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.ref-cat-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;
+  text-align: left; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; gap: 6px;
+}
+.ref-cat-card:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,.1); transform: translateY(-2px); }
+.ref-cat-card-icon { font-size: 28px; }
+.ref-cat-card-label { font-size: 16px; font-weight: 600; color: #1e293b; }
+.ref-cat-card-desc { font-size: 13px; color: #64748b; line-height: 1.45; }
+.ref-cat-card-count { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+.ref-category-heading { font-size: 20px; font-weight: 700; color: #1e293b; margin: 32px 0 16px; display: flex; align-items: center; gap: 8px; }
+
+.ref-model-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.ref-model-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ref-model-name { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
+.ref-model-name code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 17px; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
+.ref-scd-badge { font-size: 11px; font-weight: 600; color: #fff; padding: 2px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.ref-model-overview { color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 16px; }
+.ref-model-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 8px; }
+.ref-meta-item { display: flex; gap: 8px; font-size: 13px; }
+.ref-meta-label { font-weight: 600; color: #1e293b; min-width: 70px; flex-shrink: 0; }
+.ref-meta-item span:last-child { color: #475569; }
+
+.ref-columns-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.ref-columns-header h4 { margin: 0; font-size: 14px; color: #1e293b; }
+.ref-col-filter { padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; width: 200px; background: #fff; }
+.ref-col-filter:focus { outline: none; border-color: #3b82f6; }
+
+.ref-copy-btn { padding: 4px 10px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer; color: #475569; transition: all .15s; }
+.ref-copy-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+.ref-sql-block { background: #1e293b; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; font-size: 12px; line-height: 1.55; overflow-x: auto; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+.derivation-tooltip {
+  position: fixed; z-index: 1000; width: 340px; max-width: 90vw;
+  background: #1e293b; color: #e2e8f0; border-radius: 10px;
+  padding: 14px 16px; box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  font-size: 12px; line-height: 1.5; pointer-events: none;
+}
+.dt-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #334155; }
+.dt-col-name { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; font-weight: 700; color: #38bdf8; }
+.dt-col-type { font-size: 10px; color: #94a3b8; background: #334155; padding: 2px 7px; border-radius: 4px; }
+.dt-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; margin-bottom: 2px; font-weight: 600; }
+.dt-logic { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; color: #fbbf24; white-space: pre-wrap; word-break: break-word; }
+
+/* AG Grid wrapper bits used by the page */
+.c360-datagrid-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }
+.c360-datagrid-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #64748b; }
+.c360-grid-btn { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 12px; font-size: 12px; font-weight: 500; color: #64748b; cursor: pointer; transition: all 0.15s; }
+.c360-grid-btn:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+
+/* Lineage — full layer SVG (used in Reference + Explorer) */
+.ref-lineage { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 12px 0; }
+.ref-lineage h3 { margin: 0 0 4px; font-size: 18px; color: #1e293b; }
+.ref-lineage-subtitle { font-size: 13px; color: #64748b; margin: 0 0 16px; }
+.ref-lineage-scroll { overflow-x: auto; padding: 4px 0; }
+.ref-lineage-svg { display: block; }
+.ref-lineage-svg text { user-select: none; }
+.ref-lineage-caption { font-size: 13px; color: #64748b; margin: 16px 0 0; line-height: 1.5; }
+.ref-lineage-caption code { font-size: 12px; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; }
+
+@media (max-width: 900px) {
+  .ref-layout { grid-template-columns: 1fr; }
+  .ref-sidebar-nav { display: none; }
+  .ref-hero { padding: 28px 24px 24px; }
+  .ref-stats-row { gap: 20px; }
+  .ref-cat-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .ref-cat-grid { grid-template-columns: 1fr; }
+  .ref-columns-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ref-col-filter { width: 100%; }
+}
+

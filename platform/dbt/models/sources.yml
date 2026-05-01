@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: bridgesync
+    database: "{{ env_var('DBT_BRIDGESYNC_SOURCE_DATABASE', 'bridgesync_src') }}"
+    schema: "{{ env_var('DBT_BRIDGESYNC_SCHEMA', 'main') }}"
+    description: "Application source schema for Alo ActivationOS."
+    tables:
+      - name: customer_profiles
+        description: "Golden customer profiles."
+      - name: customer_attributes
+        description: "Flexible customer key-value attributes."
+      - name: customer_events
+        description: "Customer event timeline."
+      - name: customer_identities
+        description: "Identity values across systems."
+      - name: segments
+        description: "Segment definitions and cached counts."
+      - name: segment_memberships
+        description: "Materialized customer-to-segment membership rows."
+      - name: segment_activations
+        description: "Segment activation definitions."
+      - name: activation_runs
+        description: "Execution runs for activations."
+      - name: sync_runs
+        description: "Reverse ETL sync run records."
+      - name: destination_connections
+        description: "Destination integrations (Braze, Attentive, etc.)."

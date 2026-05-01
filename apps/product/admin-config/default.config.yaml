@@ -1,0 +1,15 @@
+app:
+  name: Alo ActivationOS Product
+  tenant_mode: single_tenant_deploy
+ai:
+  provider: ollama
+  model_default: meta-llama/llama-3.1-8b-instruct
+  model_fast: mistralai/mistral-7b-instruct
+  model_smart: anthropic/claude-3-haiku-20240307
+features:
+  explorer: true
+  agentic_activation: false
+  admin_analytics: true
+guardrails:
+  require_human_approval_for_ai_actions: true
+  max_auto_audience_size: 10000

@@ -1,0 +1,44 @@
+name: "activationos_transform"
+version: "1.0.0"
+config-version: 2
+
+profile: "activationos_transform"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  activationos_transform:
+    +materialized: view
+    +persist_docs:
+      relation: true
+      columns: true
+
+    staging:
+      +materialized: view
+      +tags: ["staging"]
+
+    intermediate:
+      +materialized: view
+      +tags: ["intermediate"]
+
+    marts:
+      +materialized: table
+      +tags: ["mart"]
+      customer:
+        +materialized: table
+      activation:
+        +materialized: table
+
+vars:
+  bridgesync_source_database: "{{ env_var('DBT_BRIDGESYNC_SOURCE_DATABASE', 'bridgesync_src') }}"
+  bridgesync_source_schema: "{{ env_var('DBT_BRIDGESYNC_SCHEMA', 'main') }}"

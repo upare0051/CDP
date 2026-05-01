@@ -1,0 +1,12 @@
+activationos_transform:
+  target: duckdb_local
+  outputs:
+    duckdb_local:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', '/Users/utkarshparekh/BridgeSync/platform/dbt/activationos_transform.duckdb') }}"
+      schema: "{{ env_var('DBT_DUCKDB_SCHEMA', 'main') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"
+      attach:
+        - path: "{{ env_var('DBT_BRIDGESYNC_SQLITE_PATH', '/Users/utkarshparekh/BridgeSync/backend/bridgesync.db') }}"
+          type: sqlite
+          alias: "{{ env_var('DBT_BRIDGESYNC_SOURCE_DATABASE', 'bridgesync_src') }}"

@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+description: Enforce absolute imports in this repository
+---
+
+# Import Style
+
+- Use absolute imports by default.
+- Avoid relative imports such as `from .module import X` or `from ..pkg import Y`.
+- Preferred Python import style examples:
+  - `from app.schemas import TenantCreateRequest`
+  - `from app.services.tenant_plan import build_tenant_plan`
+- Preferred TypeScript/React import style examples:
+  - `import Button from 'components/Button'` (when path aliases are configured)
+  - `import { getAdminLeads } from 'lib/api'` (when path aliases are configured)
+
+If path aliases are not configured yet, first add aliases in toolchain config, then use absolute imports consistently.

@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: stg_customer_profiles
+    description: "Standardized customer profiles from application DB."
+    columns:
+      - name: customer_id
+        data_tests: [not_null, unique]
+      - name: external_id
+        data_tests: [not_null, unique]
+
+  - name: stg_customer_attributes
+    description: "Standardized customer attributes."
+    columns:
+      - name: attribute_id
+        data_tests: [not_null, unique]
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customer_profiles')
+              field: customer_id
+      - name: attribute_name
+        data_tests: [not_null]
+
+  - name: stg_customer_events
+    description: "Standardized customer events."
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customer_profiles')
+              field: customer_id
+      - name: event_type
+        data_tests: [not_null]
+
+  - name: stg_segments
+    description: "Segment definitions and metadata."
+    columns:
+      - name: segment_id
+        data_tests: [not_null, unique]
+      - name: segment_name
+        data_tests: [not_null]
+
+  - name: stg_segment_memberships
+    description: "Customer membership rows for segments."
+    columns:
+      - name: segment_membership_id
+        data_tests: [not_null, unique]
+      - name: segment_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_segments')
+              field: segment_id
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customer_profiles')
+              field: customer_id
+
+  - name: stg_segment_activations
+    description: "Segment activation definitions."
+    columns:
+      - name: activation_id
+        data_tests: [not_null, unique]
+      - name: segment_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_segments')
+              field: segment_id
+      - name: destination_id
+        data_tests: [not_null]
+
+  - name: stg_activation_runs
+    description: "Activation run history."
+    columns:
+      - name: activation_run_pk
+        data_tests: [not_null, unique]
+      - name: activation_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_segment_activations')
+              field: activation_id

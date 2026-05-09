@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.services.c360_service import C360RedshiftService
+from app.services.c360_model_health_service import get_model_health
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -51,6 +52,29 @@ def _ollama_chat(system: str, messages: List[Dict[str, str]], max_tokens: int) -
         data = resp.json()
         # Ollama returns { message: { content } }
         return (data.get("message", {}) or {}).get("content", "").strip()
+
+
+@router.get("/model-health")
+def get_c360_model_health():
+    """
+    Upstream dbt models/snapshots for gold.customer_unified_attr (ThoughtSpot-facing C360 wide table).
+
+    Upstream list is generated from alo-data-stack dbt manifest (see scripts/generate_c360_model_health_upstream.py).
+    Each table is probed in Redshift for MAX(watermark) using a small allowlisted column priority.
+
+    **Stale (red)**: watermark is before start of the current **America/Los_Angeles** calendar day.
+    **OK (green)**: watermark is on/after start of today PST.
+    **Unknown**: no supported watermark column or probe failed.
+    """
+    try:
+        return get_model_health()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.exception("model health failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Model health query failed")
 
 
 @router.get("/schema")

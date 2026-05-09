@@ -16,13 +16,13 @@ function installGlobalCrashOverlay() {
       el.style.inset = '12px'
       el.style.zIndex = '999999'
       el.style.background = 'rgba(255,255,255,0.98)'
-      el.style.border = '1px solid #fecaca'
+      el.style.border = '1px solid #000000'
       el.style.borderRadius = '12px'
       el.style.padding = '16px'
       el.style.overflow = 'auto'
       el.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
       el.innerHTML = `
-        <div style="color:#991b1b;font-weight:800;margin-bottom:8px;font-family:system-ui, -apple-system, Segoe UI, sans-serif;">
+        <div style="color:#000000;font-weight:800;margin-bottom:8px;font-family:system-ui, -apple-system, Segoe UI, sans-serif;text-transform:uppercase;letter-spacing:0.06em;">
           ${title}
         </div>
         <pre style="white-space:pre-wrap;color:#111827;font-size:12px;line-height:1.4;margin:0;">${message.replace(/</g,'&lt;')}</pre>
@@ -66,9 +66,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#18181b',
-            color: '#fafafa',
-            border: '1px solid #27272a',
+            background: '#ffffff',
+            color: '#000000',
+            border: '1px solid #000000',
           },
         }}
       />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -30,15 +30,29 @@ type ViewMode = 'table' | 'card';
 
 export default function Customers() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [searchQueryInput, setSearchQueryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
-  const params: CustomerListParams = {
-    search: searchQuery || undefined,
-    page: currentPage,
-    page_size: pageSize,
-  };
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = searchQueryInput.trim();
+      // Prevent query-per-keystroke; only search when user typed enough.
+      setSearchQuery(next.length >= 2 ? next : '');
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchQueryInput]);
+
+  const params: CustomerListParams = useMemo(
+    () => ({
+      search: searchQuery || undefined,
+      page: currentPage,
+      page_size: pageSize,
+    }),
+    [searchQuery, currentPage]
+  );
 
   const { data: customerData, isLoading } = useQuery({
     queryKey: ['customers', params],
@@ -147,8 +161,8 @@ export default function Customers() {
             <input
               type="text"
               placeholder="Search by name, email, or external ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQueryInput}
+              onChange={(e) => setSearchQueryInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-surface-800 border border-surface-700 rounded-lg text-surface-100 placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>

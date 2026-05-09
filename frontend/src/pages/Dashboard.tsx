@@ -29,6 +29,7 @@ import {
   getRuns,
   getRunStats,
 } from '@/lib/api';
+import { cubeLoad } from '@/lib/cube';
 import { formatNumber, formatRelativeTime, cn } from '@/lib/utils';
 
 export default function Dashboard() {
@@ -46,6 +47,19 @@ export default function Dashboard() {
   const { data: syncs } = useQuery({ queryKey: ['syncs'], queryFn: getSyncs });
   const { data: runs } = useQuery({ queryKey: ['runs'], queryFn: () => getRuns(undefined, 5) });
   const { data: runStats } = useQuery({ queryKey: ['runStats'], queryFn: getRunStats });
+  const { data: cubeCustomers, isError: cubeCustomersError } = useQuery({
+    queryKey: ['cube', 'totalCustomers'],
+    // Keep this best-effort: demo should still work if Cube isn't running.
+    queryFn: async () => {
+      const resp = await cubeLoad({ measures: ['customer_dim.count'] });
+      const row = (resp.data && resp.data[0]) || {};
+      const raw = (row as any)['customer_dim.count'];
+      const n = raw === undefined || raw === null ? null : Number(raw);
+      return Number.isFinite(n) ? n : null;
+    },
+    retry: 0,
+    staleTime: 60_000,
+  });
 
   if (statsLoading) return <PageLoader />;
 
@@ -87,6 +101,27 @@ export default function Dashboard() {
               </div>
               <div className="w-14 h-14 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
                 <Users className="w-7 h-7 text-primary-600 dark:text-primary-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="stagger-1 animate-slide-in card-hover">
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Cube Customers</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                  {cubeCustomersError || cubeCustomers == null ? '—' : formatNumber(cubeCustomers)}
+                </p>
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {cubeCustomersError ? 'Cube not connected (demo OK)' : 'Governed metric'}
+                  </span>
+                </div>
+              </div>
+              <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-900/30 flex items-center justify-center">
+                <Database className="w-7 h-7 text-slate-600 dark:text-slate-400" />
               </div>
             </div>
           </CardContent>

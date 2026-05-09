@@ -540,6 +540,42 @@ export interface C360SchemaResponse {
 export const getC360Schema = () =>
   api.get<C360SchemaResponse>('/c360/schema').then((r) => r.data);
 
+export interface C360ModelHealthRow {
+  unique_id: string;
+  resource_type: string;
+  name?: string | null;
+  schema: string;
+  alias?: string | null;
+  table?: string | null;
+  relation_name?: string | null;
+  watermark_column?: string | null;
+  /** SELECT used for MAX(watermark); or suggested SQL if no column matched. */
+  watermark_sql?: string | null;
+  last_refreshed_at?: string | null;
+  last_refreshed_at_pst?: string | null;
+  status: 'ok' | 'stale' | 'unknown';
+  error?: string | null;
+}
+
+export interface C360ModelHealthResponse {
+  timezone: string;
+  as_of_pst: string;
+  start_of_today_pst: string;
+  terminal_thoughtspot_table: C360ModelHealthRow;
+  upstream: C360ModelHealthRow[];
+  summary: {
+    upstream_total: number;
+    ok: number;
+    stale: number;
+    unknown: number;
+  };
+}
+
+export const getC360ModelHealth = () =>
+  api
+    .get<C360ModelHealthResponse>('/c360/model-health', { timeout: 180000 })
+    .then((r) => r.data);
+
 export interface C360ChatResponse {
   answer: string;
   sql: string | null;

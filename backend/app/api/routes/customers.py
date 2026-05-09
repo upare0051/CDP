@@ -1,12 +1,14 @@
 """Customer 360 API routes."""
 
-from typing import Optional, List
+from pathlib import Path
+from typing import Optional, List, Union
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...services.customer_service import CustomerService
 from ...services.redshift_customer_service import RedshiftCustomerService
+from ...services.duckdb_mart_customer_service import DuckdbMartCustomerService
 from ...core.config import get_settings
 from ...schemas.customer import (
     CustomerListResponse, CustomerProfileDetail, CustomerProfileSummary,
@@ -15,6 +17,29 @@ from ...schemas.customer import (
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 settings = get_settings()
+
+MartService = Union[RedshiftCustomerService, DuckdbMartCustomerService]
+
+
+def _mart_service() -> Optional[MartService]:
+    """Redshift or DuckDB snapshot mart (same API shape). None → use Postgres CustomerService."""
+    if settings.customer_mart_source == "duckdb_snapshot":
+        path = settings.customer_mart_duckdb_path
+        if not path:
+            raise HTTPException(
+                status_code=503,
+                detail="Set customer_mart_duckdb_path when customer_mart_source=duckdb_snapshot",
+            )
+        p = Path(path).expanduser()
+        if not p.is_file():
+            raise HTTPException(
+                status_code=503,
+                detail=f"Customer mart DuckDB not found: {path}. Run scripts/build_demo_customer_mart_duckdb.py",
+            )
+        return DuckdbMartCustomerService(str(p.resolve()))
+    if settings.warehouse_mode == "redshift":
+        return RedshiftCustomerService()
+    return None
 
 
 @router.get("", response_model=CustomerListResponse)
@@ -32,9 +57,9 @@ def list_customers(
     
     Returns a paginated list of customer profiles with key attributes.
     """
-    if settings.warehouse_mode == "redshift":
-        service = RedshiftCustomerService()
-        return service.list_customers(search=search, page=page, page_size=page_size)
+    mart = _mart_service()
+    if mart is not None:
+        return mart.list_customers(search=search, page=page, page_size=page_size)
 
     service = CustomerService(db)
     return service.list_customers(
@@ -54,9 +79,9 @@ def get_customer_stats(db: Session = Depends(get_db)):
     
     Returns counts and metrics about the customer base.
     """
-    if settings.warehouse_mode == "redshift":
-        service = RedshiftCustomerService()
-        return service.get_stats()
+    mart = _mart_service()
+    if mart is not None:
+        return mart.get_stats()
 
     service = CustomerService(db)
     return service.get_stats()
@@ -69,9 +94,9 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
     
     Returns the customer profile with all attributes, events, and identities.
     """
-    if settings.warehouse_mode == "redshift":
-        service = RedshiftCustomerService()
-        customer = service.get_customer_detail(customer_id)
+    mart = _mart_service()
+    if mart is not None:
+        customer = mart.get_customer_detail(customer_id)
     else:
         service = CustomerService(db)
         customer = service.get_customer_detail(customer_id)
@@ -92,12 +117,11 @@ def get_customer_timeline(
     
     Returns a chronological list of events for the customer.
     """
-    if settings.warehouse_mode == "redshift":
-        service = RedshiftCustomerService()
-        # If the customer doesn't exist in marts, return 404 for parity.
-        if not service.get_customer_detail(customer_id):
+    mart = _mart_service()
+    if mart is not None:
+        if not mart.get_customer_detail(customer_id):
             raise HTTPException(status_code=404, detail="Customer not found")
-        return service.get_customer_timeline(customer_id=customer_id, limit=limit, event_type=event_type)
+        return mart.get_customer_timeline(customer_id=customer_id, limit=limit, event_type=event_type)
 
     service = CustomerService(db)
     customer = service.get_customer(customer_id)

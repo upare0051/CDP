@@ -12,26 +12,26 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-black dark:text-white">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={cn(
-            'w-full px-3.5 py-2.5 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100',
-            'placeholder:text-gray-400 dark:placeholder:text-gray-500',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
+            'w-full px-3.5 py-2.5 bg-white dark:bg-black border rounded-md text-black dark:text-white',
+            'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+            'focus:outline-none focus:ring-2 focus:ring-black/15 dark:focus:ring-white/25 focus:border-black dark:focus:border-white',
             'transition-all duration-150',
-            error 
-              ? 'border-red-300 dark:border-red-500' 
-              : 'border-gray-200 dark:border-gray-700',
+            error
+              ? 'border-black dark:border-white ring-1 ring-black dark:ring-white'
+              : 'border-neutral-300 dark:border-neutral-600',
             className
           )}
           {...props}
         />
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        {hint && !error && <p className="text-sm text-gray-500 dark:text-gray-400">{hint}</p>}
+        {error && <p className="text-sm text-black dark:text-white font-medium">{error}</p>}
+        {hint && !error && <p className="text-sm text-neutral-500 dark:text-neutral-400">{hint}</p>}
       </div>
     );
   }

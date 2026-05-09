@@ -89,6 +89,17 @@ class Settings(BaseSettings):
     
     # DuckDB (Local development / Demo)
     duckdb_path: str = ":memory:"
+
+    # Customer mart API: "inherit" uses warehouse_mode (redshift → Redshift, else Postgres profiles).
+    # "duckdb_snapshot" reads gold.customer_unified_attr from customer_mart_duckdb_path (fast demo; no Redshift).
+    customer_mart_source: Literal["inherit", "duckdb_snapshot"] = Field(
+        default="inherit",
+        description="Where /customers and related mart reads are served from",
+    )
+    customer_mart_duckdb_path: Optional[str] = Field(
+        default=None,
+        description="Path to DuckDB file with schema gold.customer_unified_attr (+ optional gold.order_line_fact)",
+    )
     
     # Redshift (Production)
     redshift_host: Optional[str] = None
@@ -110,6 +121,9 @@ class Settings(BaseSettings):
     c360_redshift_ssl: bool = Field(default=False)
     c360_query_timeout_seconds: int = Field(default=30, ge=1, le=300)
     c360_max_rows: int = Field(default=200, ge=1, le=5000)
+
+    # Parallel Redshift probes for /c360/model-health (one short query per upstream model).
+    c360_model_health_max_workers: int = Field(default=8, ge=1, le=24)
 
     # Allowlisted marts (schema-qualified). Keep tight; expand intentionally.
     c360_allowed_tables: List[str] = Field(

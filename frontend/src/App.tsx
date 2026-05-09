@@ -17,6 +17,7 @@ import Activations from '@/pages/Activations';
 import DataExplorer from '@/pages/DataExplorer';
 import Reference from '@/pages/Reference';
 import AskC360 from '@/pages/AskC360';
+import C360ModelHealth from '@/pages/C360ModelHealth';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +84,7 @@ function App() {
                 <Route path="/explorer" element={<DataExplorer />} />
                 <Route path="/reference" element={<Reference />} />
                 <Route path="/ask" element={<AskC360 />} />
+                <Route path="/c360/model-health" element={<C360ModelHealth />} />
                 <Route path="/activations" element={<Activations />} />
                 <Route path="/sources" element={<Sources />} />
                 <Route path="/destinations" element={<Destinations />} />

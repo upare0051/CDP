@@ -1,0 +1,1023 @@
+{
+  "root_model_id": "model.warehouse.customer_unified_attr",
+  "manifest_path": "/Users/utkarsh.parekh/alo-data-stack/is-redshift/warehouse/target/manifest.json",
+  "upstream_model_count": 127,
+  "items": [
+    {
+      "unique_id": "model.warehouse.br_airship_kinesis_events",
+      "resource_type": "model",
+      "name": "br_airship_kinesis_events",
+      "schema": "bronze",
+      "alias": "br_airship_kinesis_events",
+      "relation_name": "\"dev\".\"bronze\".\"br_airship_kinesis_events\""
+    },
+    {
+      "unique_id": "model.warehouse.br_attentive_meltano_email_sms",
+      "resource_type": "model",
+      "name": "br_attentive_meltano_email_sms",
+      "schema": "bronze",
+      "alias": "br_attentive_meltano_email_sms",
+      "relation_name": "\"dev\".\"bronze\".\"br_attentive_meltano_email_sms\""
+    },
+    {
+      "unique_id": "model.warehouse.br_braze_bella_users_subscription_state_change",
+      "resource_type": "model",
+      "name": "br_braze_bella_users_subscription_state_change",
+      "schema": "bronze",
+      "alias": "br_braze_bella_users_subscription_state_change",
+      "relation_name": "\"dev\".\"bronze\".\"br_braze_bella_users_subscription_state_change\""
+    },
+    {
+      "unique_id": "model.warehouse.br_braze_email_bounce",
+      "resource_type": "model",
+      "name": "br_braze_email_bounce",
+      "schema": "bronze",
+      "alias": "br_braze_email_bounce",
+      "relation_name": "\"dev\".\"bronze\".\"br_braze_email_bounce\""
+    },
+    {
+      "unique_id": "model.warehouse.br_braze_email_soft_bounce",
+      "resource_type": "model",
+      "name": "br_braze_email_soft_bounce",
+      "schema": "bronze",
+      "alias": "br_braze_email_soft_bounce",
+      "relation_name": "\"dev\".\"bronze\".\"br_braze_email_soft_bounce\""
+    },
+    {
+      "unique_id": "model.warehouse.br_braze_moves_users_subscription_state_change",
+      "resource_type": "model",
+      "name": "br_braze_moves_users_subscription_state_change",
+      "schema": "bronze",
+      "alias": "br_braze_moves_users_subscription_state_change",
+      "relation_name": "\"dev\".\"bronze\".\"br_braze_moves_users_subscription_state_change\""
+    },
+    {
+      "unique_id": "model.warehouse.br_braze_users_subscription_state_change",
+      "resource_type": "model",
+      "name": "br_braze_users_subscription_state_change",
+      "schema": "bronze",
+      "alias": "br_braze_users_subscription_state_change",
+      "relation_name": "\"dev\".\"bronze\".\"br_braze_users_subscription_state_change\""
+    },
+    {
+      "unique_id": "model.warehouse.br_currency_exchange_rates",
+      "resource_type": "model",
+      "name": "br_currency_exchange_rates",
+      "schema": "bronze",
+      "alias": "br_currency_exchange_rates",
+      "relation_name": "\"dev\".\"bronze\".\"br_currency_exchange_rates\""
+    },
+    {
+      "unique_id": "model.warehouse.br_ecom_heap_order_success_pageview",
+      "resource_type": "model",
+      "name": "br_ecom_heap_order_success_pageview",
+      "schema": "bronze",
+      "alias": "br_ecom_heap_order_success_pageview",
+      "relation_name": "\"dev\".\"bronze\".\"br_ecom_heap_order_success_pageview\""
+    },
+    {
+      "unique_id": "model.warehouse.br_ecom_heap_user_migrations",
+      "resource_type": "model",
+      "name": "br_ecom_heap_user_migrations",
+      "schema": "bronze",
+      "alias": "br_ecom_heap_user_migrations",
+      "relation_name": "\"dev\".\"bronze\".\"br_ecom_heap_user_migrations\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_item",
+      "resource_type": "model",
+      "name": "br_fdm4u_item",
+      "schema": "bronze",
+      "alias": "br_fdm4u_item",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_item\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_item_categ",
+      "resource_type": "model",
+      "name": "br_fdm4u_item_categ",
+      "schema": "bronze",
+      "alias": "br_fdm4u_item_categ",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_item_categ\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_item_sub_category",
+      "resource_type": "model",
+      "name": "br_fdm4u_item_sub_category",
+      "schema": "bronze",
+      "alias": "br_fdm4u_item_sub_category",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_item_sub_category\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_price_list",
+      "resource_type": "model",
+      "name": "br_fdm4u_price_list",
+      "schema": "bronze",
+      "alias": "br_fdm4u_price_list",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_price_list\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_style",
+      "resource_type": "model",
+      "name": "br_fdm4u_style",
+      "schema": "bronze",
+      "alias": "br_fdm4u_style",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_style\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_style_color",
+      "resource_type": "model",
+      "name": "br_fdm4u_style_color",
+      "schema": "bronze",
+      "alias": "br_fdm4u_style_color",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_style_color\""
+    },
+    {
+      "unique_id": "model.warehouse.br_fdm4u_style_size",
+      "resource_type": "model",
+      "name": "br_fdm4u_style_size",
+      "schema": "bronze",
+      "alias": "br_fdm4u_style_size",
+      "relation_name": "\"dev\".\"bronze\".\"br_fdm4u_style_size\""
+    },
+    {
+      "unique_id": "model.warehouse.br_ga3_transactions",
+      "resource_type": "model",
+      "name": "br_ga3_transactions",
+      "schema": "bronze",
+      "alias": "br_ga3_transactions",
+      "relation_name": "\"dev\".\"bronze\".\"br_ga3_transactions\""
+    },
+    {
+      "unique_id": "model.warehouse.br_ga3_transactions_hist",
+      "resource_type": "model",
+      "name": "br_ga3_transactions_hist",
+      "schema": "bronze",
+      "alias": "br_ga3_transactions_hist",
+      "relation_name": "\"dev\".\"bronze\".\"br_ga3_transactions_hist\""
+    },
+    {
+      "unique_id": "model.warehouse.br_ga4_bq_purchase_orders",
+      "resource_type": "model",
+      "name": "br_ga4_bq_purchase_orders",
+      "schema": "bronze",
+      "alias": "br_ga4_bq_purchase_orders",
+      "relation_name": "\"dev\".\"bronze\".\"br_ga4_bq_purchase_orders\""
+    },
+    {
+      "unique_id": "model.warehouse.br_ga4_last_click_performance",
+      "resource_type": "model",
+      "name": "br_ga4_last_click_performance",
+      "schema": "bronze",
+      "alias": "br_ga4_last_click_performance",
+      "relation_name": "\"dev\".\"bronze\".\"br_ga4_last_click_performance\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gladly_customer",
+      "resource_type": "model",
+      "name": "br_gladly_customer",
+      "schema": "bronze",
+      "alias": "br_gladly_customer",
+      "relation_name": "\"dev\".\"bronze\".\"br_gladly_customer\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gladly_customer_email",
+      "resource_type": "model",
+      "name": "br_gladly_customer_email",
+      "schema": "bronze",
+      "alias": "br_gladly_customer_email",
+      "relation_name": "\"dev\".\"bronze\".\"br_gladly_customer_email\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gladly_customer_phone",
+      "resource_type": "model",
+      "name": "br_gladly_customer_phone",
+      "schema": "bronze",
+      "alias": "br_gladly_customer_phone",
+      "relation_name": "\"dev\".\"bronze\".\"br_gladly_customer_phone\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_customer",
+      "resource_type": "model",
+      "name": "br_gq_shopify_customer",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_customer",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_customer\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_customer_address",
+      "resource_type": "model",
+      "name": "br_gq_shopify_customer_address",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_customer_address",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_customer_address\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_location",
+      "resource_type": "model",
+      "name": "br_gq_shopify_location",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_location",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_location\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_discount_allocation",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_discount_allocation",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_discount_allocation",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_discount_allocation\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_discount_application",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_discount_application",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_discount_application",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_discount_application\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_discount_code",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_discount_code",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_discount_code",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_discount_code\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_fulfillment",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_fulfillment",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_fulfillment",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_fulfillment\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_fulfillment_line_item",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_fulfillment_line_item",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_fulfillment_line_item",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_fulfillment_line_item\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_line_item",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_line_item",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_line_item",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_line_item\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_line_item_property",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_line_item_property",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_line_item_property",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_line_item_property\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_note_attribute",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_note_attribute",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_note_attribute",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_note_attribute\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_refund",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_refund",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_refund",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_refund\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_refund_line",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_refund_line",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_refund_line",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_refund_line\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_refund_transaction",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_refund_transaction",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_refund_transaction",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_refund_transaction\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_order_shipping_line",
+      "resource_type": "model",
+      "name": "br_gq_shopify_order_shipping_line",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_order_shipping_line",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_order_shipping_line\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_product",
+      "resource_type": "model",
+      "name": "br_gq_shopify_product",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_product",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_product\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_product_collection",
+      "resource_type": "model",
+      "name": "br_gq_shopify_product_collection",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_product_collection",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_product_collection\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_product_metafield",
+      "resource_type": "model",
+      "name": "br_gq_shopify_product_metafield",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_product_metafield",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_product_metafield\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_product_option",
+      "resource_type": "model",
+      "name": "br_gq_shopify_product_option",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_product_option",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_product_option\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_product_url",
+      "resource_type": "model",
+      "name": "br_gq_shopify_product_url",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_product_url",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_product_url\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_product_variant",
+      "resource_type": "model",
+      "name": "br_gq_shopify_product_variant",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_product_variant",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_product_variant\""
+    },
+    {
+      "unique_id": "model.warehouse.br_gq_shopify_transaction",
+      "resource_type": "model",
+      "name": "br_gq_shopify_transaction",
+      "schema": "bronze",
+      "alias": "br_gq_shopify_transaction",
+      "relation_name": "\"dev\".\"bronze\".\"br_gq_shopify_transaction\""
+    },
+    {
+      "unique_id": "model.warehouse.br_holiday_calendar",
+      "resource_type": "model",
+      "name": "br_holiday_calendar",
+      "schema": "bronze",
+      "alias": "br_holiday_calendar",
+      "relation_name": "\"dev\".\"bronze\".\"br_holiday_calendar\""
+    },
+    {
+      "unique_id": "model.warehouse.br_loop_line_item_returns",
+      "resource_type": "model",
+      "name": "br_loop_line_item_returns",
+      "schema": "bronze",
+      "alias": "br_loop_line_item_returns",
+      "relation_name": "\"dev\".\"bronze\".\"br_loop_line_item_returns\""
+    },
+    {
+      "unique_id": "model.warehouse.br_loyalty_customers",
+      "resource_type": "model",
+      "name": "br_loyalty_customers",
+      "schema": "bronze",
+      "alias": "br_loyalty_customers",
+      "relation_name": "\"dev\".\"bronze\".\"br_loyalty_customers\""
+    },
+    {
+      "unique_id": "model.warehouse.br_mapping",
+      "resource_type": "model",
+      "name": "br_mapping",
+      "schema": "bronze",
+      "alias": "br_mapping",
+      "relation_name": "\"dev\".\"bronze\".\"br_mapping\""
+    },
+    {
+      "unique_id": "model.warehouse.br_numbers",
+      "resource_type": "model",
+      "name": "br_numbers",
+      "schema": "bronze",
+      "alias": "br_numbers",
+      "relation_name": "\"dev\".\"bronze\".\"br_numbers\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_audit_log",
+      "resource_type": "model",
+      "name": "br_sfs_audit_log",
+      "schema": "bronze",
+      "alias": "br_sfs_audit_log",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_audit_log\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_cartons",
+      "resource_type": "model",
+      "name": "br_sfs_cartons",
+      "schema": "bronze",
+      "alias": "br_sfs_cartons",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_cartons\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_order",
+      "resource_type": "model",
+      "name": "br_sfs_order",
+      "schema": "bronze",
+      "alias": "br_sfs_order",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_order\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_order_allocation",
+      "resource_type": "model",
+      "name": "br_sfs_order_allocation",
+      "schema": "bronze",
+      "alias": "br_sfs_order_allocation",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_order_allocation\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_order_line_item",
+      "resource_type": "model",
+      "name": "br_sfs_order_line_item",
+      "schema": "bronze",
+      "alias": "br_sfs_order_line_item",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_order_line_item\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_store",
+      "resource_type": "model",
+      "name": "br_sfs_store",
+      "schema": "bronze",
+      "alias": "br_sfs_store",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_store\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_store_capacity_mapping",
+      "resource_type": "model",
+      "name": "br_sfs_store_capacity_mapping",
+      "schema": "bronze",
+      "alias": "br_sfs_store_capacity_mapping",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_store_capacity_mapping\""
+    },
+    {
+      "unique_id": "model.warehouse.br_sfs_store_regular_hour",
+      "resource_type": "model",
+      "name": "br_sfs_store_regular_hour",
+      "schema": "bronze",
+      "alias": "br_sfs_store_regular_hour",
+      "relation_name": "\"dev\".\"bronze\".\"br_sfs_store_regular_hour\""
+    },
+    {
+      "unique_id": "model.warehouse.br_shopify_products_variant_active_list",
+      "resource_type": "model",
+      "name": "br_shopify_products_variant_active_list",
+      "schema": "bronze",
+      "alias": "br_shopify_products_variant_active_list",
+      "relation_name": "\"dev\".\"bronze\".\"br_shopify_products_variant_active_list\""
+    },
+    {
+      "unique_id": "model.warehouse.br_store_info",
+      "resource_type": "model",
+      "name": "br_store_info",
+      "schema": "bronze",
+      "alias": "br_store_info",
+      "relation_name": "\"dev\".\"bronze\".\"br_store_info\""
+    },
+    {
+      "unique_id": "model.warehouse.customer_contact_prefs_dim",
+      "resource_type": "model",
+      "name": "customer_contact_prefs_dim",
+      "schema": "gold",
+      "alias": "customer_contact_prefs_dim",
+      "relation_name": "\"dev\".\"gold\".\"customer_contact_prefs_dim\""
+    },
+    {
+      "unique_id": "model.warehouse.customer_dim",
+      "resource_type": "model",
+      "name": "customer_dim",
+      "schema": "gold",
+      "alias": "customer_dim",
+      "relation_name": "\"dev\".\"gold\".\"customer_dim\""
+    },
+    {
+      "unique_id": "model.warehouse.customer_geo_segment",
+      "resource_type": "model",
+      "name": "customer_geo_segment",
+      "schema": "gold",
+      "alias": "customer_geo_segment",
+      "relation_name": "\"dev\".\"gold\".\"customer_geo_segment\""
+    },
+    {
+      "unique_id": "model.warehouse.customer_rfm_fact",
+      "resource_type": "model",
+      "name": "customer_rfm_fact",
+      "schema": "gold",
+      "alias": "customer_rfm_fact",
+      "relation_name": "\"dev\".\"gold\".\"customer_rfm_fact\""
+    },
+    {
+      "unique_id": "model.warehouse.order_line_fact",
+      "resource_type": "model",
+      "name": "order_line_fact",
+      "schema": "gold",
+      "alias": "order_line_fact",
+      "relation_name": "\"dev\".\"gold\".\"order_line_fact\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_airship_push_message",
+      "resource_type": "model",
+      "name": "sil_airship_push_message",
+      "schema": "silver",
+      "alias": "sil_airship_push_message",
+      "relation_name": "\"dev\".\"silver\".\"sil_airship_push_message\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_airship_push_subscriber_status",
+      "resource_type": "model",
+      "name": "sil_airship_push_subscriber_status",
+      "schema": "silver",
+      "alias": "sil_airship_push_subscriber_status",
+      "relation_name": "\"dev\".\"silver\".\"sil_airship_push_subscriber_status\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_attentive_sms_subscriber_status",
+      "resource_type": "model",
+      "name": "sil_attentive_sms_subscriber_status",
+      "schema": "silver",
+      "alias": "sil_attentive_sms_subscriber_status",
+      "relation_name": "\"dev\".\"silver\".\"sil_attentive_sms_subscriber_status\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_braze_latest_user_status",
+      "resource_type": "model",
+      "name": "sil_braze_latest_user_status",
+      "schema": "silver",
+      "alias": "sil_braze_latest_user_status",
+      "relation_name": "\"dev\".\"silver\".\"sil_braze_latest_user_status\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_customer_dim",
+      "resource_type": "model",
+      "name": "sil_customer_dim",
+      "schema": "silver",
+      "alias": "sil_customer_dim",
+      "relation_name": "\"dev\".\"silver\".\"sil_customer_dim\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_fdm4_item_dim",
+      "resource_type": "model",
+      "name": "sil_fdm4_item_dim",
+      "schema": "silver",
+      "alias": "sil_fdm4_item_dim",
+      "relation_name": "\"dev\".\"silver\".\"sil_fdm4_item_dim\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_bq_transactions",
+      "resource_type": "model",
+      "name": "sil_pre_bq_transactions",
+      "schema": "silver",
+      "alias": "sil_pre_bq_transactions",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_bq_transactions\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_colors",
+      "resource_type": "model",
+      "name": "sil_pre_colors",
+      "schema": "silver",
+      "alias": "sil_pre_colors",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_colors\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_currency_exchange_rate_end_of_day",
+      "resource_type": "model",
+      "name": "sil_pre_currency_exchange_rate_end_of_day",
+      "schema": "silver",
+      "alias": "sil_pre_currency_exchange_rate_end_of_day",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_currency_exchange_rate_end_of_day\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_customer_default_address",
+      "resource_type": "model",
+      "name": "sil_pre_customer_default_address",
+      "schema": "silver",
+      "alias": "sil_pre_customer_default_address",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_customer_default_address\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_customer_loyalty_orders",
+      "resource_type": "model",
+      "name": "sil_pre_customer_loyalty_orders",
+      "schema": "silver",
+      "alias": "sil_pre_customer_loyalty_orders",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_customer_loyalty_orders\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_ga_bq_transactions",
+      "resource_type": "model",
+      "name": "sil_pre_ga_bq_transactions",
+      "schema": "silver",
+      "alias": "sil_pre_ga_bq_transactions",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_ga_bq_transactions\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_gladly_customer",
+      "resource_type": "model",
+      "name": "sil_pre_gladly_customer",
+      "schema": "silver",
+      "alias": "sil_pre_gladly_customer",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_gladly_customer\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_order_confirmation_page_complete_order",
+      "resource_type": "model",
+      "name": "sil_pre_order_confirmation_page_complete_order",
+      "schema": "silver",
+      "alias": "sil_pre_order_confirmation_page_complete_order",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_order_confirmation_page_complete_order\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_order_duties",
+      "resource_type": "model",
+      "name": "sil_pre_order_duties",
+      "schema": "silver",
+      "alias": "sil_pre_order_duties",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_order_duties\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_order_line_item_discounts",
+      "resource_type": "model",
+      "name": "sil_pre_order_line_item_discounts",
+      "schema": "silver",
+      "alias": "sil_pre_order_line_item_discounts",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_order_line_item_discounts\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_order_line_item_properties",
+      "resource_type": "model",
+      "name": "sil_pre_order_line_item_properties",
+      "schema": "silver",
+      "alias": "sil_pre_order_line_item_properties",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_order_line_item_properties\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_order_line_item_tax",
+      "resource_type": "model",
+      "name": "sil_pre_order_line_item_tax",
+      "schema": "silver",
+      "alias": "sil_pre_order_line_item_tax",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_order_line_item_tax\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_product_collections",
+      "resource_type": "model",
+      "name": "sil_pre_product_collections",
+      "schema": "silver",
+      "alias": "sil_pre_product_collections",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_product_collections\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_product_families",
+      "resource_type": "model",
+      "name": "sil_pre_product_families",
+      "schema": "silver",
+      "alias": "sil_pre_product_families",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_product_families\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_product_status",
+      "resource_type": "model",
+      "name": "sil_pre_product_status",
+      "schema": "silver",
+      "alias": "sil_pre_product_status",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_product_status\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_product_swatches",
+      "resource_type": "model",
+      "name": "sil_pre_product_swatches",
+      "schema": "silver",
+      "alias": "sil_pre_product_swatches",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_product_swatches\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_product_tags",
+      "resource_type": "model",
+      "name": "sil_pre_product_tags",
+      "schema": "silver",
+      "alias": "sil_pre_product_tags",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_product_tags\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_sfs_orders",
+      "resource_type": "model",
+      "name": "sil_pre_sfs_orders",
+      "schema": "silver",
+      "alias": "sil_pre_sfs_orders",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_sfs_orders\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_customer",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_customer",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_customer",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_customer\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_customer_address",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_customer_address",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_customer_address",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_customer_address\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_deleted_product_variant",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_deleted_product_variant",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_deleted_product_variant",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_deleted_product_variant\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_latest_transaction",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_latest_transaction",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_latest_transaction",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_latest_transaction\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_location",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_location",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_location",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_location\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_discount_allocation",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_discount_allocation",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_discount_allocation",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_discount_allocation\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_discount_application",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_discount_application",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_discount_application",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_discount_application\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_discount_code",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_discount_code",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_discount_code",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_discount_code\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_fulfillment",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_fulfillment",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_fulfillment",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_fulfillment\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_fulfillment_line_item",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_fulfillment_line_item",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_fulfillment_line_item",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_fulfillment_line_item\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_line_item",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_line_item",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_line_item",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_line_item\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_line_item_fulfillments",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_line_item_fulfillments",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_line_item_fulfillments",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_line_item_fulfillments\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_line_item_property",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_line_item_property",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_line_item_property",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_line_item_property\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_note_attribute",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_note_attribute",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_note_attribute",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_note_attribute\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_refund",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_refund",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_refund",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_refund\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_refund_line",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_refund_line",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_refund_line",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_refund_line\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_refund_line_agg",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_refund_line_agg",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_refund_line_agg",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_refund_line_agg\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_refund_transaction",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_refund_transaction",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_refund_transaction",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_refund_transaction\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_shipping_code",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_shipping_code",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_shipping_code",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_shipping_code\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_order_shipping_line",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_order_shipping_line",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_order_shipping_line",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_order_shipping_line\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_product",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_product",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_product",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_product\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_product_collection",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_product_collection",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_product_collection",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_product_collection\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_product_metafield",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_product_metafield",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_product_metafield",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_product_metafield\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_product_option",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_product_option",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_product_option",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_product_option\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_product_url",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_product_url",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_product_url",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_product_url\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_product_variant",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_product_variant",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_product_variant",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_product_variant\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_pre_shopify_transactions",
+      "resource_type": "model",
+      "name": "sil_pre_shopify_transactions",
+      "schema": "silver",
+      "alias": "sil_pre_shopify_transactions",
+      "relation_name": "\"dev\".\"silver\".\"sil_pre_shopify_transactions\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_product_dim",
+      "resource_type": "model",
+      "name": "sil_product_dim",
+      "schema": "silver",
+      "alias": "sil_product_dim",
+      "relation_name": "\"dev\".\"silver\".\"sil_product_dim\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_retail_locations",
+      "resource_type": "model",
+      "name": "sil_retail_locations",
+      "schema": "silver",
+      "alias": "sil_retail_locations",
+      "relation_name": "\"dev\".\"silver\".\"sil_retail_locations\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_shopify_order_dim",
+      "resource_type": "model",
+      "name": "sil_shopify_order_dim",
+      "schema": "silver",
+      "alias": "sil_shopify_order_dim",
+      "relation_name": "\"dev\".\"silver\".\"sil_shopify_order_dim\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_shopify_order_line_item_facts",
+      "resource_type": "model",
+      "name": "sil_shopify_order_line_item_facts",
+      "schema": "silver",
+      "alias": "sil_shopify_order_line_item_facts",
+      "relation_name": "\"dev\".\"silver\".\"sil_shopify_order_line_item_facts\""
+    },
+    {
+      "unique_id": "model.warehouse.sil_shopify_order_line_items_dim",
+      "resource_type": "model",
+      "name": "sil_shopify_order_line_items_dim",
+      "schema": "silver",
+      "alias": "sil_shopify_order_line_items_dim",
+      "relation_name": "\"dev\".\"silver\".\"sil_shopify_order_line_items_dim\""
+    },
+    {
+      "unique_id": "snapshot.warehouse.customer_address_dim",
+      "resource_type": "snapshot",
+      "name": "customer_address_dim",
+      "schema": "gold",
+      "alias": "customer_address_dim",
+      "relation_name": "\"dev\".\"gold\".\"customer_address_dim\""
+    },
+    {
+      "unique_id": "snapshot.warehouse.customer_identifier_dim",
+      "resource_type": "snapshot",
+      "name": "customer_identifier_dim",
+      "schema": "gold",
+      "alias": "customer_identifier_dim",
+      "relation_name": "\"dev\".\"gold\".\"customer_identifier_dim\""
+    },
+    {
+      "unique_id": "snapshot.warehouse.customer_loyalty_dim",
+      "resource_type": "snapshot",
+      "name": "customer_loyalty_dim",
+      "schema": "gold",
+      "alias": "customer_loyalty_dim",
+      "relation_name": "\"dev\".\"gold\".\"customer_loyalty_dim\""
+    }
+  ]
+}

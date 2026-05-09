@@ -4,7 +4,7 @@
 .ref-page { max-width: 1440px; margin: 0 auto; }
 
 .ref-hero {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(135deg, #000000 0%, #404040 100%);
   color: #fff; border-radius: 16px; padding: 40px 36px 32px;
   margin-bottom: 24px;
 }
@@ -20,15 +20,15 @@
   padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;
   background: #fff; width: 100%; max-width: 420px;
 }
-.ref-search:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.ref-search:focus { outline: none; border-color: #000000; box-shadow: 0 0 0 3px rgba(0,0,0,.12); }
 .ref-cat-pills { display: flex; gap: 8px; flex-wrap: wrap; }
 .ref-cat-pill {
   padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; background: #fff;
   font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px;
   transition: all .15s;
 }
-.ref-cat-pill:hover { border-color: #3b82f6; color: #3b82f6; }
-.ref-cat-pill.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.ref-cat-pill:hover { border-color: #000000; color: #000000; }
+.ref-cat-pill.active { background: #000000; color: #fff; border-color: #000000; }
 .ref-cat-icon { font-size: 15px; }
 
 .ref-layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start; }
@@ -52,7 +52,7 @@
   background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;
   text-align: left; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; gap: 6px;
 }
-.ref-cat-card:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,.1); transform: translateY(-2px); }
+.ref-cat-card:hover { border-color: #000000; box-shadow: 0 4px 12px rgba(0,0,0,.12); transform: translateY(-2px); }
 .ref-cat-card-icon { font-size: 28px; }
 .ref-cat-card-label { font-size: 16px; font-weight: 600; color: #1e293b; }
 .ref-cat-card-desc { font-size: 13px; color: #64748b; line-height: 1.45; }
@@ -74,10 +74,10 @@
 .ref-columns-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .ref-columns-header h4 { margin: 0; font-size: 14px; color: #1e293b; }
 .ref-col-filter { padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; width: 200px; background: #fff; }
-.ref-col-filter:focus { outline: none; border-color: #3b82f6; }
+.ref-col-filter:focus { outline: none; border-color: #000000; }
 
 .ref-copy-btn { padding: 4px 10px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer; color: #475569; transition: all .15s; }
-.ref-copy-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+.ref-copy-btn:hover { border-color: #000000; color: #000000; }
 .ref-sql-block { background: #1e293b; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; font-size: 12px; line-height: 1.55; overflow-x: auto; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
 .derivation-tooltip {
@@ -87,10 +87,10 @@
   font-size: 12px; line-height: 1.5; pointer-events: none;
 }
 .dt-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #334155; }
-.dt-col-name { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; font-weight: 700; color: #38bdf8; }
+.dt-col-name { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; font-weight: 700; color: #ffffff; }
 .dt-col-type { font-size: 10px; color: #94a3b8; background: #334155; padding: 2px 7px; border-radius: 4px; }
 .dt-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; margin-bottom: 2px; font-weight: 600; }
-.dt-logic { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; color: #fbbf24; white-space: pre-wrap; word-break: break-word; }
+.dt-logic { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; color: #e5e5e5; white-space: pre-wrap; word-break: break-word; }
 
 /* AG Grid wrapper bits used by the page */
 .c360-datagrid-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff; }

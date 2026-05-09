@@ -35,6 +35,11 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      // Cube REST API (demo: run Cube locally on :4000)
+      '/cubejs-api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
     },
   },
 })

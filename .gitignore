@@ -16,3 +16,5 @@ dist/
 *.duckdb
 *.db
 data/demo/
+data/aloversary/*.parquet
+data/aloversary/*.csv

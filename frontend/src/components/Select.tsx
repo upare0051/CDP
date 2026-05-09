@@ -19,7 +19,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-black dark:text-white">
             {label}
           </label>
         )}
@@ -27,13 +27,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             className={cn(
-              'w-full px-3.5 py-2.5 bg-white dark:bg-gray-800 border rounded-lg text-gray-900 dark:text-gray-100',
+              'w-full px-3.5 py-2.5 bg-white dark:bg-black border rounded-md text-black dark:text-white',
               'appearance-none cursor-pointer',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
+              'focus:outline-none focus:ring-2 focus:ring-black/15 dark:focus:ring-white/25 focus:border-black dark:focus:border-white',
               'transition-all duration-150',
-              error 
-                ? 'border-red-300 dark:border-red-500' 
-                : 'border-gray-200 dark:border-gray-700',
+              error
+                ? 'border-black dark:border-white ring-1 ring-black dark:ring-white'
+                : 'border-neutral-300 dark:border-neutral-600',
               className
             )}
             {...props}
@@ -49,9 +49,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-400 pointer-events-none" />
         </div>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-black dark:text-white font-medium">{error}</p>}
       </div>
     );
   }

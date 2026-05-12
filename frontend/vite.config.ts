@@ -37,7 +37,7 @@ export default defineConfig({
       },
       // Cube REST API (demo: run Cube locally on :4000)
       '/cubejs-api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:4001',
         changeOrigin: true,
       },
       // Dittofeed dashboard (Journeys). When running the full stack via

@@ -42,11 +42,10 @@ services:
     image: cubejs/cube:latest
     env_file:
       - cube/.env
-    # No host port mapping by default — users access Cube only via nginx at
-    # /cubejs-api/* (JSON, no UI). Re-expose for local debugging via
-    # CUBE_DEV_HOST_PORT env var (uncomment the line below).
-    # ports:
-    #   - "${CUBE_DEV_HOST_PORT:-4001}:4000"
+    # Host port for local backend (`python backend/main.py`) and Vite proxy.
+    # Unified stack on port 80 still reaches Cube via Docker DNS (cube-api:4000).
+    ports:
+      - "${CUBE_DEV_HOST_PORT:-4001}:4000"
     volumes:
       - ./cube:/cube/conf
     depends_on:

@@ -126,6 +126,9 @@ services:
       - WAREHOUSE_POSTGRES_USER=cdp
       - WAREHOUSE_POSTGRES_PASSWORD=cdp
       - "DUCKDB_PATH=:memory:"
+      # Cube (semantic layer). Same compose network when cube overlay is up.
+      - CUBE_API_URL=http://cube-api:4000
+      - CUBE_API_SECRET=${CUBE_API_SECRET:-cdp-demo-secret-change-me}
       # Dittofeed (journey orchestration). cdp-main backend proxies to it,
       # so the workspace lookup stays server-side.
       - DITTOFEED_API_URL=http://journeys-lite:3000

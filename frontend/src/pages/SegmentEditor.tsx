@@ -22,19 +22,23 @@ import {
   createSegment,
   updateSegment,
   previewSegment,
+  previewSegmentCube,
   activateSegment,
   archiveSegment,
   createSegmentFromAI,
   exportSegment,
   FilterConfig,
+  CubeQuery,
   SegmentCreate,
   SegmentUpdate,
+  SegmentSourceType,
 } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import FilterBuilder from '@/components/FilterBuilder';
+import CubeSegmentBuilder from '@/components/CubeSegmentBuilder';
 import { PageLoader } from '@/components/LoadingSpinner';
 
 export default function SegmentEditor() {
@@ -46,7 +50,9 @@ export default function SegmentEditor() {
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [sourceType, setSourceType] = useState<SegmentSourceType>('legacy');
   const [filterConfig, setFilterConfig] = useState<FilterConfig>({ filters: [], logic: 'AND' });
+  const [cubeQuery, setCubeQuery] = useState<CubeQuery>({ dimensions: [], filters: [], limit: 1000 });
   const [aiPrompt, setAiPrompt] = useState('');
   const [showAiInput, setShowAiInput] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -69,7 +75,11 @@ export default function SegmentEditor() {
     if (segment) {
       setName(segment.name);
       setDescription(segment.description || '');
+      setSourceType(segment.source_type || 'legacy');
       setFilterConfig(segment.filter_config);
+      if (segment.cube_query) {
+        setCubeQuery(segment.cube_query);
+      }
       setPreviewCount(segment.estimated_count);
     }
   }, [segment]);
@@ -150,18 +160,28 @@ export default function SegmentEditor() {
     }
   };
 
-  // Preview function
+  // Preview function — dispatches on sourceType.
   const fetchPreview = useCallback(
-    debounce(async (config: FilterConfig) => {
-      if (config.filters.length === 0) {
+    debounce(async (src: SegmentSourceType, legacy: FilterConfig, cube: CubeQuery) => {
+      const emptyLegacy = legacy.filters.length === 0;
+      const emptyCube = (!cube.filters || cube.filters.length === 0);
+      if (src === 'legacy' && emptyLegacy) {
         setPreviewCount(null);
         setPreviewSamples([]);
+        setPreviewTime(null);
+        return;
+      }
+      if (src === 'cube' && emptyCube) {
+        setPreviewCount(null);
+        setPreviewSamples([]);
+        setPreviewTime(null);
         return;
       }
 
       setPreviewLoading(true);
       try {
-        const result = await previewSegment(config);
+        const result =
+          src === 'cube' ? await previewSegmentCube(cube) : await previewSegment(legacy);
         setPreviewCount(result.count);
         setPreviewSamples(result.sample_customers);
         setPreviewTime(result.query_time_ms);
@@ -174,34 +194,51 @@ export default function SegmentEditor() {
     []
   );
 
-  // Trigger preview when filters change
+  // Trigger preview when sourceType, filters, or cube query changes.
   useEffect(() => {
-    fetchPreview(filterConfig);
-  }, [filterConfig, fetchPreview]);
+    fetchPreview(sourceType, filterConfig, cubeQuery);
+  }, [sourceType, filterConfig, cubeQuery, fetchPreview]);
 
-  // Handle filter changes
   const handleFilterChange = (config: FilterConfig) => {
     setFilterConfig(config);
     setHasChanges(true);
   };
 
-  // Save handler
+  const handleCubeQueryChange = (q: CubeQuery) => {
+    setCubeQuery(q);
+    setHasChanges(true);
+  };
+
+  const handleSourceTypeChange = (next: SegmentSourceType) => {
+    setSourceType(next);
+    setHasChanges(true);
+    // Reset preview when switching modes; new mode's effect will refetch.
+    setPreviewCount(null);
+    setPreviewSamples([]);
+    setPreviewTime(null);
+  };
+
+  // Save handler — sends the field set appropriate to the active source type.
   const handleSave = () => {
     if (!name.trim()) return;
 
+    const basePayload = {
+      name: name.trim(),
+      description: description.trim() || undefined,
+      source_type: sourceType,
+    };
+
     if (isNew) {
-      const data: SegmentCreate = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        filter_config: filterConfig,
-      };
+      const data: SegmentCreate =
+        sourceType === 'cube'
+          ? { ...basePayload, cube_query: cubeQuery }
+          : { ...basePayload, filter_config: filterConfig };
       createMutation.mutate(data);
     } else {
-      const data: SegmentUpdate = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        filter_config: filterConfig,
-      };
+      const data: SegmentUpdate =
+        sourceType === 'cube'
+          ? { ...basePayload, cube_query: cubeQuery }
+          : { ...basePayload, filter_config: filterConfig };
       updateMutation.mutate({ id: parseInt(id!), data });
     }
   };
@@ -373,16 +410,50 @@ export default function SegmentEditor() {
             )}
           </Card>
 
-          {/* Filter Builder */}
+          {/* Filter Builder (legacy or Cube) */}
           <Card>
             <CardHeader>
-              <CardTitle>Filter Conditions</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Audience Definition</CardTitle>
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSourceTypeChange('legacy')}
+                    className={cn(
+                      'px-3 py-1 text-xs font-medium rounded transition-colors',
+                      sourceType === 'legacy'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
+                    )}
+                  >
+                    App profiles
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSourceTypeChange('cube')}
+                    className={cn(
+                      'px-3 py-1 text-xs font-medium rounded transition-colors',
+                      sourceType === 'cube'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
+                    )}
+                  >
+                    Cube (warehouse)
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {sourceType === 'cube'
+                  ? 'Build audience against the Cube semantic layer (warehouse-backed, governed).'
+                  : 'Filter app-managed customer profiles.'}
+              </p>
             </CardHeader>
             <CardContent>
-              <FilterBuilder
-                value={filterConfig}
-                onChange={handleFilterChange}
-              />
+              {sourceType === 'cube' ? (
+                <CubeSegmentBuilder value={cubeQuery} onChange={handleCubeQueryChange} />
+              ) : (
+                <FilterBuilder value={filterConfig} onChange={handleFilterChange} />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -412,10 +483,10 @@ export default function SegmentEditor() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {filterConfig.filters.length === 0 
+                  {((sourceType === 'legacy' && filterConfig.filters.length === 0) ||
+                    (sourceType === 'cube' && (cubeQuery.filters?.length ?? 0) === 0))
                     ? 'Add filters to see count'
-                    : 'matching customers'
-                  }
+                    : 'matching customers'}
                 </p>
                 {previewTime !== null && (
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
@@ -431,24 +502,41 @@ export default function SegmentEditor() {
                     Sample Customers
                   </h4>
                   <div className="space-y-2">
-                    {previewSamples.map((customer, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-700 dark:text-primary-400 font-medium text-sm">
-                          {customer.first_name?.[0] || customer.email?.[0] || '?'}
+                    {previewSamples.map((row, idx) => {
+                      // Cube rows have fully-qualified keys like
+                      // "customer_unified.email"; legacy rows have plain keys.
+                      // Pick the first matching alias for the common fields.
+                      const pick = (...keys: string[]) => {
+                        for (const k of keys) {
+                          for (const rk of Object.keys(row)) {
+                            if (rk === k || rk.endsWith(`.${k}`)) return row[rk];
+                          }
+                        }
+                        return undefined;
+                      };
+                      const email = pick('email');
+                      const name = pick('full_name', 'first_name');
+                      const id = pick('customer_id', 'external_id', 'id');
+                      const initial = (name || email || id || '?').toString().charAt(0).toUpperCase();
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-700 dark:text-primary-400 font-medium text-sm">
+                            {initial}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {name || email || (id ? `Customer ${id}` : 'Unknown')}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {email || (id ? `id: ${id}` : '')}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {customer.full_name || customer.email || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {customer.email}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -458,8 +546,12 @@ export default function SegmentEditor() {
                 variant="ghost"
                 size="sm"
                 className="w-full mt-4"
-                onClick={() => fetchPreview(filterConfig)}
-                disabled={previewLoading || filterConfig.filters.length === 0}
+                onClick={() => fetchPreview(sourceType, filterConfig, cubeQuery)}
+                disabled={
+                  previewLoading ||
+                  (sourceType === 'legacy' && filterConfig.filters.length === 0) ||
+                  (sourceType === 'cube' && (cubeQuery.filters?.length ?? 0) === 0)
+                }
               >
                 <RefreshCw className={cn("w-4 h-4", previewLoading && "animate-spin")} />
                 Refresh Preview

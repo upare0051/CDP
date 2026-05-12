@@ -24,7 +24,11 @@ class SegmentBase(BaseModel):
     """Base segment schema."""
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
+    # source_type drives which of (filter_config, cube_query) is authoritative.
+    source_type: Literal["legacy", "cube"] = "legacy"
     filter_config: FilterConfig = FilterConfig()
+    # Cube query payload (Cube REST /load body shape). Required when source_type=cube.
+    cube_query: Optional[Dict[str, Any]] = None
     tags: List[str] = []
 
 
@@ -38,7 +42,9 @@ class SegmentUpdate(BaseModel):
     """Schema for updating a segment."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
+    source_type: Optional[Literal["legacy", "cube"]] = None
     filter_config: Optional[FilterConfig] = None
+    cube_query: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
     tags: Optional[List[str]] = None
 
@@ -68,8 +74,14 @@ class SegmentListResponse(BaseModel):
 
 
 class SegmentPreviewRequest(BaseModel):
-    """Request schema for previewing segment count."""
-    filter_config: FilterConfig
+    """Request schema for previewing segment count.
+
+    Provide either filter_config (legacy) or cube_query (cube). Honors
+    source_type when both are present.
+    """
+    source_type: Literal["legacy", "cube"] = "legacy"
+    filter_config: Optional[FilterConfig] = None
+    cube_query: Optional[Dict[str, Any]] = None
 
 
 class SegmentPreviewResponse(BaseModel):
@@ -77,6 +89,7 @@ class SegmentPreviewResponse(BaseModel):
     count: int
     sample_customers: List[Dict[str, Any]] = []
     query_time_ms: float
+    source_type: Literal["legacy", "cube"] = "legacy"
 
 
 class SegmentFieldInfo(BaseModel):

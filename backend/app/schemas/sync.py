@@ -35,12 +35,21 @@ class FieldMappingResponse(FieldMappingBase):
 
 # Sync Job Schemas
 class SyncJobBase(BaseModel):
-    """Base schema for sync job."""
+    """Base schema for sync job.
+
+    A sync job has two possible source shapes:
+      - Table-based: source_schema + source_table (+ source_connection_id).
+      - Segment-based: source_segment_id (audience resolved through the
+        Segment/Cube layer at run time).
+    All table fields are optional; create-time validation enforces that at
+    least one source shape is provided.
+    """
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
-    source_schema: str = Field(..., min_length=1, max_length=255)
-    source_table: str = Field(..., min_length=1, max_length=255)
+    source_schema: Optional[str] = Field(default=None, max_length=255)
+    source_table: Optional[str] = Field(default=None, max_length=255)
     source_query: Optional[str] = None
+    source_segment_id: Optional[int] = None
     sync_mode: SyncMode = SyncMode.FULL_REFRESH
     sync_key: str = Field(..., min_length=1, max_length=255)
     incremental_column: Optional[str] = None
@@ -64,9 +73,22 @@ class SyncJobBase(BaseModel):
 
 class SyncJobCreate(SyncJobBase):
     """Schema for creating sync job."""
-    source_connection_id: int
+    source_connection_id: Optional[int] = None  # None for segment-based syncs
     destination_connection_id: int
     field_mappings: List[FieldMappingCreate] = []
+
+    @field_validator("source_segment_id", mode="after")
+    @classmethod
+    def validate_source_shape(cls, v, info):
+        """Exactly one source shape must be specified."""
+        has_segment = v is not None
+        has_table = bool(info.data.get("source_table")) and bool(info.data.get("source_schema"))
+        has_conn = info.data.get("source_connection_id") is not None
+        if has_segment and (has_table or has_conn):
+            raise ValueError("Provide either source_segment_id OR source_connection_id+source_table, not both")
+        if not has_segment and not (has_table and has_conn):
+            raise ValueError("source_segment_id OR source_connection_id+source_schema+source_table is required")
+        return v
 
 
 class SyncJobUpdate(BaseModel):
@@ -76,6 +98,7 @@ class SyncJobUpdate(BaseModel):
     source_schema: Optional[str] = None
     source_table: Optional[str] = None
     source_query: Optional[str] = None
+    source_segment_id: Optional[int] = None
     sync_mode: Optional[SyncMode] = None
     sync_key: Optional[str] = None
     incremental_column: Optional[str] = None
@@ -88,7 +111,7 @@ class SyncJobUpdate(BaseModel):
 class SyncJobResponse(SyncJobBase):
     """Schema for sync job response."""
     id: int
-    source_connection_id: int
+    source_connection_id: Optional[int] = None
     destination_connection_id: int
     is_active: bool
     is_paused: bool

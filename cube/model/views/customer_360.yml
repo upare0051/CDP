@@ -1,0 +1,79 @@
+views:
+  - name: customer_360
+    description: |
+      Joined customer view across dimension and fact tables. Use when you need
+      to combine identity / address / loyalty / contact prefs / RFM / orders
+      in a single query. For pure attribute-only audiences, prefer the
+      `customer_unified` view (single-table, faster).
+
+    cubes:
+      - join_path: customer_dim
+        includes:
+          - customer_id
+          - first_name
+          - last_name
+          - birthdate
+          - count
+
+      - join_path: customer_dim.customer_address_dim
+        prefix: false
+        includes:
+          - country_code
+          - state
+          - city
+          - zip_code
+
+      - join_path: customer_dim.customer_identifier_dim
+        prefix: false
+        includes:
+          - email
+          - email_norm
+          - phone
+          - phone_norm
+
+      - join_path: customer_dim.customer_loyalty_dim
+        prefix: false
+        includes:
+          - loyalty_enrolled
+          - loyalty_tier_name
+          - membership_expires_at
+          - enrolled_count
+
+      - join_path: customer_dim.customer_contact_prefs_dim
+        prefix: false
+        includes:
+          - email_subscribed
+          - sms_subscribed
+          - push_enabled
+          - preferred_comm_channel
+          - total_channels_subscribed
+          - email_reachable_count
+          - sms_reachable_count
+          - push_reachable_count
+
+      - join_path: customer_dim.customer_geo_segment
+        prefix: false
+        includes:
+          - digital_geo_segment
+          - omni_geo_segment
+          - domestic_international_customer
+
+      - join_path: customer_dim.customer_rfm_fact
+        prefix: false
+        includes:
+          - first_order_date
+          - last_order_date
+          - days_since_last_order
+          - orders_last_52_weeks
+          - revenue_last_52_weeks
+          - total_orders_l3y
+          - total_revenue_l3y
+          - total_revenue_l3y_sum
+          - revenue_last_52_weeks_sum
+
+      - join_path: customer_dim.order_line_fact
+        prefix: true
+        includes:
+          - line_revenue_sum
+          - qty_sum
+          - order_count

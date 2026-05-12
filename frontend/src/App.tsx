@@ -18,6 +18,8 @@ import DataExplorer from '@/pages/DataExplorer';
 import Reference from '@/pages/Reference';
 import AskC360 from '@/pages/AskC360';
 import C360ModelHealth from '@/pages/C360ModelHealth';
+import JourneyBuilder from '@/pages/JourneyBuilder';
+import Deliveries from '@/pages/journey-builder/Deliveries';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +88,10 @@ function App() {
                 <Route path="/ask" element={<AskC360 />} />
                 <Route path="/c360/model-health" element={<C360ModelHealth />} />
                 <Route path="/activations" element={<Activations />} />
+                {/* Native pages — replace the iframe surface one at a time. */}
+                <Route path="/journey-builder/deliveries" element={<Deliveries />} />
+                {/* Everything else under /journey-builder still iframes Dittofeed. */}
+                <Route path="/journey-builder/*" element={<JourneyBuilder />} />
                 <Route path="/sources" element={<Sources />} />
                 <Route path="/destinations" element={<Destinations />} />
                 <Route path="/syncs" element={<Syncs />} />

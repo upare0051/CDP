@@ -1,6 +1,6 @@
 """Sync engine - orchestrates data sync from source to destination."""
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Iterator
 from datetime import datetime
 import time
 
@@ -8,11 +8,13 @@ from sqlalchemy.orm import Session
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from ..models.sync import SyncJob, SyncRun, SyncMode, SyncStatus
+from ..models.segment import Segment, SegmentSourceType
 from ..adapters.sources import SourceAdapterFactory, SourceConfig
 from ..adapters.destinations import DestinationAdapterFactory, DestinationConfig, FieldMapping as AdapterFieldMapping
 from ..core.security import decrypt_credential
 from ..core.config import get_settings
 from ..core.logging import get_logger
+from . import cube_client
 from .sync_service import SyncService
 from .customer_service import CustomerService
 
@@ -114,25 +116,35 @@ class SyncEngine:
             return run
     
     def _do_sync(
-        self, 
-        job: SyncJob, 
+        self,
+        job: SyncJob,
         run: SyncRun,
         force_full_refresh: bool,
     ) -> Dict[str, Any]:
-        """Execute the actual sync logic."""
+        """Execute the actual sync logic.
+
+        Dispatches on the job's source shape:
+          - source_segment_id set  -> resolve segment, stream rows from
+            Cube (or legacy DB) into the destination.
+          - else                   -> table-based path through SourceAdapter.
+        """
         logs = []
         logs.append(f"[{datetime.utcnow().isoformat()}] Starting sync: {job.name}")
-        
+
         # Determine sync mode
         is_incremental = (
-            job.sync_mode == SyncMode.INCREMENTAL 
-            and job.incremental_column 
+            job.sync_mode == SyncMode.INCREMENTAL
+            and job.incremental_column
             and job.last_checkpoint_value
             and not force_full_refresh
         )
-        
+
         logs.append(f"[{datetime.utcnow().isoformat()}] Sync mode: {'incremental' if is_incremental else 'full_refresh'}")
-        
+
+        if job.source_segment_id is not None:
+            return self._do_segment_sync(job, run, logs)
+
+        # ----- Table-based (existing) path -----
         # Create source adapter
         source_conn = job.source_connection
         source_config = SourceConfig(
@@ -145,7 +157,7 @@ class SyncEngine:
             extra_config=source_conn.extra_config,
         )
         source_adapter = SourceAdapterFactory.create(source_conn.source_type.value, source_config)
-        
+
         # Create destination adapter
         dest_conn = job.destination_connection
         dest_config = DestinationConfig(
@@ -156,7 +168,7 @@ class SyncEngine:
             extra_config=dest_conn.extra_config,
         )
         dest_adapter = DestinationAdapterFactory.create(dest_conn.destination_type.value, dest_config)
-        
+
         # Build field mappings for destination adapter
         field_mappings = [
             AdapterFieldMapping(
@@ -167,12 +179,12 @@ class SyncEngine:
             )
             for m in job.field_mappings
         ]
-        
+
         # Build source columns list
         source_columns = [m.source_field for m in job.field_mappings]
         if job.incremental_column and job.incremental_column not in source_columns:
             source_columns.append(job.incremental_column)
-        
+
         # Build query
         if job.source_query:
             query = job.source_query
@@ -191,9 +203,9 @@ class SyncEngine:
                 incremental_column=job.incremental_column if is_incremental else None,
                 checkpoint_value=job.last_checkpoint_value if is_incremental else None,
             )
-        
+
         logs.append(f"[{datetime.utcnow().isoformat()}] Executing query: {query[:200]}...")
-        
+
         # Execute sync with batching
         rows_read = 0
         rows_synced = 0
@@ -203,13 +215,13 @@ class SyncEngine:
         first_error_message = None
         batch_size = dest_conn.batch_size or settings.sync_batch_size
         synced_records = []  # Collect for Customer 360 profile building
-        
+
         with source_adapter:
             # Check for schema changes
             current_hash = source_adapter.get_schema_hash(job.source_schema, job.source_table)
             if job.source_schema_hash and current_hash != job.source_schema_hash:
                 logs.append(f"[{datetime.utcnow().isoformat()}] WARNING: Schema change detected!")
-            
+
             # Stream data in batches
             for batch in source_adapter.stream_query(query, batch_size):
                 batch_size_actual = len(batch)
@@ -340,7 +352,7 @@ class SyncEngine:
             job.source_schema_hash = current_hash
             job.last_schema_check_at = datetime.utcnow()
             self.db.commit()
-            
+
             return {
                 "has_changes": has_changes,
                 "current_hash": current_hash,
@@ -349,3 +361,164 @@ class SyncEngine:
                 "removed_columns": removed,
                 "modified_columns": modified,
             }
+
+    # =========================================================================
+    # Segment-driven sync path
+    # =========================================================================
+
+    def _do_segment_sync(
+        self,
+        job: SyncJob,
+        run: SyncRun,
+        logs: List[str],
+    ) -> Dict[str, Any]:
+        """Resolve the job's segment, stream audience rows, feed destination.
+
+        Mirrors the table-source loop: read batches, apply field mappings,
+        send to destination adapter, accumulate metrics. Skips the
+        SourceAdapter (no DB connection to manage) and schema-hash logic
+        (segments are governed by Cube, not raw table shapes).
+        """
+        segment: Optional[Segment] = (
+            self.db.query(Segment).filter(Segment.id == job.source_segment_id).first()
+        )
+        if not segment:
+            raise ValueError(f"Segment {job.source_segment_id} (referenced by sync {job.id}) not found")
+
+        logs.append(
+            f"[{datetime.utcnow().isoformat()}] Source: segment {segment.id} "
+            f"'{segment.name}' ({segment.source_type})"
+        )
+
+        # Destination adapter (same path as table-sync).
+        dest_conn = job.destination_connection
+        dest_config = DestinationConfig(
+            api_key=decrypt_credential(dest_conn.api_key_encrypted),
+            api_endpoint=dest_conn.api_endpoint or dest_conn.attentive_api_url,
+            batch_size=dest_conn.batch_size or 75,
+            rate_limit_per_second=dest_conn.rate_limit_per_second or 100,
+            extra_config=dest_conn.extra_config,
+        )
+        dest_adapter = DestinationAdapterFactory.create(dest_conn.destination_type.value, dest_config)
+
+        field_mappings = [
+            AdapterFieldMapping(
+                source_field=m.source_field,
+                destination_field=m.destination_field,
+                transformation=m.transformation,
+                is_sync_key=m.is_sync_key,
+            )
+            for m in job.field_mappings
+        ]
+
+        batch_size = dest_conn.batch_size or settings.sync_batch_size
+        rows_read = 0
+        rows_synced = 0
+        rows_failed = 0
+        rows_skipped = 0
+        first_error_message: Optional[str] = None
+        synced_records: List[Dict[str, Any]] = []
+
+        for batch in self._iter_segment_rows(segment, batch_size, logs):
+            rows_read += len(batch)
+            if not batch:
+                continue
+            try:
+                result = self._send_batch_with_retry(dest_adapter, batch, field_mappings, job.sync_key)
+                rows_synced += result.records_sent
+                rows_failed += result.records_failed
+                rows_skipped += result.records_skipped
+                if result.records_sent > 0:
+                    synced_records.extend(batch[:result.records_sent])
+                if result.errors:
+                    for err in result.errors[:5]:
+                        logs.append(f"[{datetime.utcnow().isoformat()}] Error: {err}")
+                    if first_error_message is None:
+                        first_error_message = str(result.errors[0])
+            except Exception as e:
+                rows_failed += len(batch)
+                logs.append(f"[{datetime.utcnow().isoformat()}] Batch failed: {e}")
+                if first_error_message is None:
+                    first_error_message = str(e)
+            # Respect destination rate limit
+            time.sleep(1 / dest_config.rate_limit_per_second)
+
+        logs.append(
+            f"[{datetime.utcnow().isoformat()}] Segment sync completed: "
+            f"{rows_synced} synced, {rows_failed} failed, {rows_skipped} skipped"
+        )
+
+        # Update segment's cached count so the UI reflects fresh activity.
+        try:
+            segment.estimated_count = rows_read
+            segment.last_count_at = datetime.utcnow()
+            self.db.commit()
+        except Exception as e:
+            logger.warning("Failed to update segment count after sync", error=str(e))
+
+        return {
+            "rows_read": rows_read,
+            "rows_synced": rows_synced,
+            "rows_failed": rows_failed,
+            "rows_skipped": rows_skipped,
+            "new_checkpoint_value": None,
+            "error_message": first_error_message,
+            "logs": "\n".join(logs),
+        }
+
+    def _iter_segment_rows(
+        self,
+        segment: Segment,
+        batch_size: int,
+        logs: List[str],
+    ) -> Iterator[List[Dict[str, Any]]]:
+        """Yield batches of rows from a segment.
+
+        - cube:   strip the Cube prefix from each column so field mappings
+                  written against `email` / `customer_id` work without
+                  needing to know about `customer_unified.email`.
+                  Honors the cube_query's `limit` as the audience cap.
+        - legacy: pages through CustomerProfile (limit/offset).
+        """
+        if segment.source_type == SegmentSourceType.CUBE.value:
+            cube_query = segment.cube_query or {}
+            try:
+                result = cube_client.cube_load(cube_query)
+            except (cube_client.CubeQueryError, cube_client.CubeUnavailableError) as e:
+                raise RuntimeError(f"Cube segment fetch failed: {e}")
+            rows = result.get("data", []) or []
+            logs.append(f"[{datetime.utcnow().isoformat()}] Cube returned {len(rows)} rows for audience")
+            stripped = [_strip_cube_prefix(r) for r in rows]
+            for i in range(0, len(stripped), batch_size):
+                yield stripped[i:i + batch_size]
+            return
+
+        # Legacy CustomerProfile segment: page through the filtered query.
+        from .segment_service import SegmentService  # local import to avoid cycle
+        svc = SegmentService(self.db)
+        # Determine total via existing preview (no sample needed).
+        page = 1
+        page_size = max(batch_size, 100)
+        while True:
+            customers, total = svc.get_segment_customers(segment.id, page=page, page_size=page_size)
+            if not customers:
+                break
+            batch = [svc._customer_to_dict(c) for c in customers]
+            yield batch
+            if page * page_size >= total:
+                break
+            page += 1
+
+
+def _strip_cube_prefix(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Turn `{'cube.email': 'a@b'}` into `{'email': 'a@b'}`.
+
+    Cube returns fully-qualified keys; downstream field mappings reference
+    short field names (e.g. `email`, `customer_id`). Last segment of the
+    dotted name wins on collisions; keys without a dot are passed through.
+    """
+    out: Dict[str, Any] = {}
+    for k, v in row.items():
+        short = k.split(".", 1)[1] if "." in k else k
+        out[short] = v
+    return out

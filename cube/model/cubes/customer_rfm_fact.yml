@@ -1,0 +1,69 @@
+cubes:
+  - name: customer_rfm_fact
+    sql_table: gold.customer_rfm_fact
+    description: Customer-level RFM (Recency / Frequency / Monetary) snapshot.
+
+    dimensions:
+      - name: customer_id
+        sql: customer_id
+        type: number
+        primary_key: true
+        public: false
+      - name: as_of_date
+        sql: as_of_date
+        type: time
+      - name: first_order_date
+        sql: first_order_date
+        type: time
+      - name: last_order_date
+        sql: last_order_date
+        type: time
+      - name: days_since_first_order
+        sql: days_since_first_order
+        type: number
+      - name: days_since_last_order
+        sql: days_since_last_order
+        type: number
+      - name: orders_last_52_weeks
+        sql: orders_last_52_weeks
+        type: number
+      - name: revenue_last_52_weeks
+        sql: revenue_last_52_weeks
+        type: number
+      - name: rfm_3yr_as_of_date
+        sql: rfm_3yr_as_of_date
+        type: time
+      - name: total_orders_l3y
+        sql: total_orders_l3y
+        type: number
+      - name: total_revenue_l3y
+        sql: total_revenue_l3y
+        type: number
+      - name: total_units_l3y
+        sql: total_units_l3y
+        type: number
+      - name: revenue_per_unit_l3y
+        sql: revenue_per_unit_l3y
+        type: number
+      - name: avg_days_between_orders_l3y
+        sql: avg_days_between_orders_l3y
+        type: number
+
+    measures:
+      - name: count
+        type: count
+      - name: total_revenue_l3y_sum
+        sql: total_revenue_l3y
+        type: sum
+      - name: total_revenue_l3y_avg
+        sql: total_revenue_l3y
+        type: avg
+      - name: revenue_last_52_weeks_sum
+        sql: revenue_last_52_weeks
+        type: sum
+      - name: revenue_last_52_weeks_avg
+        sql: revenue_last_52_weeks
+        type: avg
+      - name: total_orders_l3y_sum
+        sql: total_orders_l3y
+        type: sum

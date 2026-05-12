@@ -9,3 +9,5 @@ from .segments import router as segments_router
 from .activations import router as activations_router
 from .explorer import router as explorer_router
 from .c360 import router as c360_router
+from .cube import router as cube_router
+from .journey_builder import router as journey_builder_router

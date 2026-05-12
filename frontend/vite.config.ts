@@ -40,6 +40,15 @@ export default defineConfig({
         target: 'http://localhost:4000',
         changeOrigin: true,
       },
+      // Dittofeed dashboard (Journeys). When running the full stack via
+      // docker compose, users normally access cdp-main through nginx at
+      // http://localhost/ — this proxy is a fallback so /dashboard/*
+      // works in `vite dev` mode too. WebSocket upgrade for Next.js HMR.
+      '/dashboard': {
+        target: 'http://localhost/',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 })

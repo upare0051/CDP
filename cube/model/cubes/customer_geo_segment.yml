@@ -1,0 +1,27 @@
+cubes:
+  - name: customer_geo_segment
+    sql_table: gold.customer_geo_segment
+    description: Geographic segmentation (digital/omni/domestic-international).
+
+    dimensions:
+      - name: customer_id
+        sql: customer_id
+        type: number
+        primary_key: true
+        public: false
+      - name: digital_geo_segment
+        sql: digital_geo_segment
+        type: string
+      - name: omni_geo_segment
+        sql: omni_geo_segment
+        type: string
+      - name: domestic_international_customer
+        sql: domestic_international_customer
+        type: string
+      - name: etl_loaded_at
+        sql: etl_loaded_at
+        type: time
+
+    measures:
+      - name: count
+        type: count

@@ -160,11 +160,31 @@ export interface FilterConfig {
   logic: 'AND' | 'OR';
 }
 
+// Cube semantic-layer query shape (subset of Cube REST /load body).
+export interface CubeQueryFilter {
+  member: string;
+  operator: string;
+  values?: (string | number | boolean)[];
+}
+
+export interface CubeQuery {
+  measures?: string[];
+  dimensions?: string[];
+  filters?: CubeQueryFilter[];
+  order?: Record<string, 'asc' | 'desc'>;
+  limit?: number;
+  segments?: string[];
+}
+
+export type SegmentSourceType = 'legacy' | 'cube';
+
 export interface Segment {
   id: number;
   name: string;
   description: string | null;
+  source_type: SegmentSourceType;
   filter_config: FilterConfig;
+  cube_query: CubeQuery | null;
   status: 'draft' | 'active' | 'archived';
   estimated_count: number | null;
   last_count_at: string | null;
@@ -179,7 +199,9 @@ export interface Segment {
 export interface SegmentCreate {
   name: string;
   description?: string;
-  filter_config: FilterConfig;
+  source_type?: SegmentSourceType;
+  filter_config?: FilterConfig;
+  cube_query?: CubeQuery;
   tags?: string[];
   ai_generated?: boolean;
   ai_prompt?: string;
@@ -188,7 +210,9 @@ export interface SegmentCreate {
 export interface SegmentUpdate {
   name?: string;
   description?: string;
+  source_type?: SegmentSourceType;
   filter_config?: FilterConfig;
+  cube_query?: CubeQuery;
   status?: string;
   tags?: string[];
 }
@@ -204,6 +228,29 @@ export interface SegmentPreviewResponse {
   count: number;
   sample_customers: Record<string, any>[];
   query_time_ms: number;
+  source_type?: SegmentSourceType;
+}
+
+// ---------- Cube meta types ----------
+export interface CubeMember {
+  name: string;          // fully-qualified, e.g. "customer_unified.email"
+  shortTitle?: string;
+  title?: string;
+  type: string;          // 'string' | 'number' | 'time' | 'boolean' | etc.
+  description?: string;
+}
+
+export interface CubeMetaCube {
+  name: string;
+  type?: 'cube' | 'view';
+  title?: string;
+  description?: string;
+  dimensions: CubeMember[];
+  measures: CubeMember[];
+}
+
+export interface CubeMetaResponse {
+  cubes: CubeMetaCube[];
 }
 
 export interface SegmentField {
@@ -256,7 +303,81 @@ export const deleteSegment = (id: number) =>
   api.delete(`/segments/${id}`).then(r => r.data);
 
 export const previewSegment = (filter_config: FilterConfig) =>
-  api.post<SegmentPreviewResponse>('/segments/preview', { filter_config }).then(r => r.data);
+  api.post<SegmentPreviewResponse>('/segments/preview', {
+    source_type: 'legacy',
+    filter_config,
+  }).then(r => r.data);
+
+// Cube-defined segment preview
+export const previewSegmentCube = (cube_query: CubeQuery) =>
+  api.post<SegmentPreviewResponse>('/segments/preview', {
+    source_type: 'cube',
+    cube_query,
+  }).then(r => r.data);
+
+// Cube proxy: model metadata for the segment builder
+export const getCubeMeta = () =>
+  api.get<CubeMetaResponse>('/cube/meta').then(r => r.data);
+
+// Cube proxy: ad-hoc load (used for free-form audience exploration)
+export const cubeLoad = (query: CubeQuery) =>
+  api.post<{ data?: Record<string, unknown>[]; annotation?: any }>('/cube/load', { query }).then(r => r.data);
+
+// ============================================================================
+// Journey Builder — native cdp-main surfaces (Phase 0: Deliveries)
+// ============================================================================
+
+export interface DeliveryItemVariant {
+  type?: string;
+  to?: string;
+  from?: string;
+  subject?: string;
+  body?: string;
+  // Channel-specific fields vary; treat as opaque dictionary.
+  [key: string]: unknown;
+}
+
+export interface DeliveryItem {
+  sentAt: string;
+  updatedAt: string;
+  journeyId?: string;
+  broadcastId?: string;
+  userId: string;
+  isAnonymous?: boolean;
+  originMessageId: string;
+  triggeringMessageId?: string;
+  templateId: string;
+  status: string;
+  variant?: DeliveryItemVariant;
+  // Pre-1.0 records may store channel/to flat on the item.
+  channel?: string;
+  to?: string;
+}
+
+export interface DeliveriesResponse {
+  workspaceId: string;
+  items: DeliveryItem[];
+  cursor?: string;
+  previousCursor?: string;
+}
+
+export interface DeliveriesQuery {
+  limit?: number;
+  cursor?: string;
+  journeyId?: string;
+  broadcastId?: string;
+  userId?: string;
+  channels?: string[];
+  statuses?: string[];
+  sortBy?: 'sentAt' | 'updatedAt';
+  sortDirection?: 'Asc' | 'Desc';
+}
+
+export const listDeliveries = (params: DeliveriesQuery = {}) =>
+  api.get<DeliveriesResponse>('/journey-builder/deliveries', { params }).then(r => r.data);
+
+export const countDeliveries = (params: Omit<DeliveriesQuery, 'limit' | 'cursor' | 'sortBy' | 'sortDirection'> = {}) =>
+  api.get<{ count: number }>('/journey-builder/deliveries/count', { params }).then(r => r.data);
 
 export const refreshSegmentCount = (id: number) =>
   api.post<Segment>(`/segments/${id}/refresh-count`).then(r => r.data);

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Database,
@@ -17,6 +17,12 @@ import {
   BookOpen,
   MessageSquareText,
   Activity,
+  Workflow,
+  Mail,
+  Megaphone,
+  PieChart,
+  Truck,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggleButton } from '@/components/ThemeToggle';
@@ -25,7 +31,27 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
+type NavLeaf = {
+  kind?: 'leaf';
+  path: string;
+  icon: typeof Filter;
+  label: string;
+};
+
+type NavGroup = {
+  kind: 'group';
+  basePath: string;       // shared prefix used to mark group "active"
+  icon: typeof Filter;
+  label: string;
+  children: NavLeaf[];
+};
+
+type NavEntry = NavLeaf | NavGroup;
+
+// Journey Builder surfaces Dittofeed inside cdp-main. Each child maps to a
+// /journey-builder/<sub> route that iframes /dashboard/<sub> via the proxy.
+// See pages/JourneyBuilder.tsx.
+const navItems: NavEntry[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/customers', icon: Users, label: 'Customers' },
   { path: '/segments', icon: Filter, label: 'Segments' },
@@ -34,18 +60,62 @@ const navItems = [
   { path: '/ask', icon: MessageSquareText, label: 'Ask C360' },
   { path: '/c360/model-health', icon: Activity, label: 'C360 health' },
   { path: '/activations', icon: Zap, label: 'Activations' },
+  {
+    kind: 'group',
+    basePath: '/journey-builder',
+    icon: Workflow,
+    label: 'Journey Builder',
+    children: [
+      { path: '/journey-builder/journeys',         icon: Workflow,  label: 'Journeys' },
+      { path: '/journey-builder/templates',        icon: Mail,      label: 'Templates' },
+      { path: '/journey-builder/broadcasts',       icon: Megaphone, label: 'Broadcasts' },
+      { path: '/journey-builder/analysis/overview',icon: PieChart,  label: 'Analytics' },
+      { path: '/journey-builder/deliveries',       icon: Truck,     label: 'Deliveries' },
+    ],
+  },
   { path: '/sources', icon: Database, label: 'Sources' },
   { path: '/destinations', icon: Send, label: 'Destinations' },
   { path: '/syncs', icon: RefreshCw, label: 'Syncs' },
   { path: '/runs', icon: History, label: 'Run History' },
 ];
 
+// Shared row styling for both top-level leaves and group children.
+function rowClassName(isActive: boolean, indented = false) {
+  return cn(
+    'flex items-center gap-3 px-3 py-3 transition-colors font-semibold uppercase tracking-[0.14em]',
+    indented ? 'pl-9 text-[10px]' : 'text-xs',
+    isActive
+      ? 'text-white border-b-2 border-white'
+      : 'text-white/55 hover:text-white border-b-2 border-transparent',
+  );
+}
+
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
+  // Track which groups are open. A group whose basePath matches the active
+  // URL is forced open; others remember per-session via local state.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    // When the user navigates INTO a group, auto-open it. We don't auto-close
+    // when navigating away — feels less twitchy.
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      for (const it of navItems) {
+        if (it.kind === 'group' && location.pathname.startsWith(it.basePath)) {
+          next[it.basePath] = true;
+        }
+      }
+      return next;
+    });
+  }, [location.pathname]);
+
+  const toggleGroup = (basePath: string) =>
+    setOpenGroups((prev) => ({ ...prev, [basePath]: !prev[basePath] }));
+
   return (
     <div className="min-h-screen flex bg-white dark:bg-black">
-      {/* Sidebar — dark “nav tier” (Sanctuary-style contrast) */}
+      {/* Sidebar — dark "nav tier" (Sanctuary-style contrast) */}
       <aside className="w-64 bg-black dark:bg-neutral-950 text-white border-r border-neutral-800 flex flex-col">
         {/* Logo */}
         <div className="h-16 px-6 flex items-center border-b border-neutral-800 bg-white dark:bg-black">
@@ -57,24 +127,60 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-0.5">
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || 
+            if (item.kind === 'group') {
+              const isOpen =
+                openGroups[item.basePath] ??
+                location.pathname.startsWith(item.basePath);
+              const isParentActive = location.pathname.startsWith(item.basePath);
+
+              return (
+                <div key={item.basePath}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(item.basePath)}
+                    className={cn(rowClassName(isParentActive), 'w-full text-left')}
+                    aria-expanded={isOpen}
+                    aria-controls={`group-${item.basePath}`}
+                  >
+                    <item.icon className="w-5 h-5 shrink-0 opacity-90" />
+                    <span className="flex-1">{item.label}</span>
+                    <ChevronRight
+                      className={cn(
+                        'w-4 h-4 opacity-60 transition-transform',
+                        isOpen && 'rotate-90',
+                      )}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div id={`group-${item.basePath}`} className="space-y-0.5">
+                      {item.children.map((child) => {
+                        const isChildActive = location.pathname.startsWith(child.path);
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className={rowClassName(isChildActive, true)}
+                          >
+                            <child.icon className="w-4 h-4 shrink-0 opacity-90" />
+                            <span className="flex-1">{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const isActive =
+              location.pathname === item.path ||
               (item.path !== '/' && location.pathname.startsWith(item.path));
-            
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-3 transition-colors text-xs font-semibold uppercase tracking-[0.14em]',
-                  isActive
-                    ? 'text-white border-b-2 border-white'
-                    : 'text-white/55 hover:text-white border-b-2 border-transparent'
-                )}
-              >
+              <Link key={item.path} to={item.path} className={rowClassName(isActive)}>
                 <item.icon className="w-5 h-5 shrink-0 opacity-90" />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
               </Link>
             );
           })}

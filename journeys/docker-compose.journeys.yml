@@ -1,0 +1,148 @@
+# Overlay compose for Dittofeed journey orchestration + nginx unifier.
+#
+# Run as the third overlay (after cube):
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f cube/docker-compose.cube.yml \
+#     -f journeys/docker-compose.journeys.yml \
+#     up -d
+#
+# Adds:
+#   - journeys-postgres   : Dittofeed's app DB (port 25432 host-exposed for debug)
+#   - journeys-clickhouse : Dittofeed's analytics store (8125 host)
+#   - journeys-temporal   : workflow engine that powers journeys
+#   - journeys-lite       : the Dittofeed app itself (internal port 3000)
+#   - cdp-proxy           : nginx, http://localhost/ unified entry point
+#
+# Users hit http://localhost/ and see one cdp-main UI. Clicking the
+# "Journeys" nav item navigates to http://localhost/dashboard/journeys
+# which nginx routes to Dittofeed. Same domain, no iframe.
+
+services:
+  # --- Dittofeed deps ---------------------------------------------------------
+  journeys-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: dittofeed
+      POSTGRES_PASSWORD: dittofeed
+      POSTGRES_DB: dittofeed
+    ports:
+      - "25432:5432"
+    volumes:
+      - journeys_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dittofeed"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  journeys-clickhouse:
+    image: clickhouse/clickhouse-server:24.12.6.70-alpine
+    environment:
+      CLICKHOUSE_USER: dittofeed
+      CLICKHOUSE_PASSWORD: dittofeed
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_LISTEN_HOST: "0.0.0.0"
+    ports:
+      - "8125:8123"
+    volumes:
+      - journeys_clickhouse_data:/var/lib/clickhouse
+    # Same IPv6-disabled workaround as the Cube/CH situation: drop a config
+    # snippet that forces IPv4 listen.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /etc/clickhouse-server/config.d &&
+        printf '<clickhouse><listen_host>0.0.0.0</listen_host></clickhouse>' > /etc/clickhouse-server/config.d/listen.xml &&
+        exec /entrypoint.sh
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  journeys-temporal:
+    image: temporalio/auto-setup:1.22.4
+    environment:
+      DB: postgresql
+      DB_PORT: "5432"
+      POSTGRES_USER: dittofeed
+      POSTGRES_PWD: dittofeed
+      POSTGRES_SEEDS: journeys-postgres
+      # Use the auto-setup image's default dynamic config — Dittofeed's
+      # reference compose mounts a `prod.yaml` we don't have, so pointing at
+      # it makes Temporal crash. Defaults are fine for the demo.
+    depends_on:
+      journeys-postgres:
+        condition: service_healthy
+    ports:
+      - "27233:7233"
+
+  # --- Dittofeed app ----------------------------------------------------------
+  journeys-lite:
+    image: dittofeed/dittofeed-lite:v0.24.0-alpha.17
+    restart: always
+    command:
+      - node
+      - --max-old-space-size=824
+      - ./packages/lite/dist/scripts/startLite.js
+      - --workspace-name=Alo
+    deploy:
+      resources:
+        limits:
+          memory: 1280m
+    environment:
+      NODE_ENV: production
+      # ---- DB ----
+      DATABASE_HOST: journeys-postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: dittofeed
+      DATABASE_PASSWORD: dittofeed
+      # ---- ClickHouse ----
+      CLICKHOUSE_HOST: http://journeys-clickhouse:8123
+      CLICKHOUSE_USER: dittofeed
+      CLICKHOUSE_PASSWORD: dittofeed
+      # ---- Temporal ----
+      TEMPORAL_ADDRESS: journeys-temporal:7233
+      # ---- App ----
+      WORKSPACE_NAME: Alo
+      AUTH_MODE: anonymous           # local demo; switch to single-tenant for SSO
+      SECRET_KEY: cdp-demo-dittofeed-secret-change-me
+      PASSWORD: alo-demo
+      # The dashboard fetches the API from this base URL. Relative URLs
+      # (empty / starting with "/") use the same origin → nginx routes
+      # /api/* to Dittofeed.
+      DASHBOARD_API_BASE: ""
+      BOOTSTRAP: "true"
+    depends_on:
+      journeys-postgres:
+        condition: service_healthy
+      journeys-clickhouse:
+        condition: service_healthy
+      journeys-temporal:
+        condition: service_started
+    # No host port mapping — only nginx talks to this service.
+
+  # --- Unified front door ----------------------------------------------------
+  cdp-proxy:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./journeys/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Stripped Dittofeed branding CSS, served at /dashboard-overrides.css
+      # and injected via sub_filter into Dittofeed HTML responses.
+      - ./journeys/dashboard-overrides.css:/etc/nginx/overrides/dashboard-overrides.css:ro
+    depends_on:
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_started
+    # cube-api and journeys-lite are referenced via DNS by nginx config;
+    # depends_on isn't strictly needed (nginx retries on connect refused).
+
+volumes:
+  journeys_postgres_data:
+  journeys_clickhouse_data:

@@ -1,0 +1,51 @@
+cubes:
+  - name: customer_dim
+    sql_table: gold.customer_dim
+    description: Core customer dimension. Hub for all customer-keyed joins.
+
+    joins:
+      - name: customer_address_dim
+        sql: "{CUBE}.customer_id = {customer_address_dim}.customer_id"
+        relationship: one_to_one
+      - name: customer_contact_prefs_dim
+        sql: "{CUBE}.customer_id = {customer_contact_prefs_dim}.customer_id"
+        relationship: one_to_one
+      - name: customer_identifier_dim
+        sql: "{CUBE}.customer_id = {customer_identifier_dim}.customer_id"
+        relationship: one_to_one
+      - name: customer_loyalty_dim
+        sql: "{CUBE}.customer_id = {customer_loyalty_dim}.customer_id"
+        relationship: one_to_one
+      - name: customer_geo_segment
+        sql: "{CUBE}.customer_id = {customer_geo_segment}.customer_id"
+        relationship: one_to_one
+      - name: customer_rfm_fact
+        sql: "{CUBE}.customer_id = {customer_rfm_fact}.customer_id"
+        relationship: one_to_one
+      - name: order_line_fact
+        sql: "{CUBE}.customer_id = {order_line_fact}.customer_id"
+        relationship: one_to_many
+
+    dimensions:
+      - name: customer_id
+        sql: customer_id
+        type: number
+        primary_key: true
+        public: true
+      - name: first_name
+        sql: first_name
+        type: string
+      - name: last_name
+        sql: last_name
+        type: string
+      - name: birthdate
+        sql: birthdate
+        type: time
+      - name: etl_loaded_at
+        sql: etl_loaded_at
+        type: time
+
+    measures:
+      - name: count
+        type: count
+        description: Distinct customers

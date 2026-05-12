@@ -1,0 +1,44 @@
+cubes:
+  - name: order_line_fact
+    sql_table: gold.order_line_fact
+    description: Order line items. Many-to-one with customer_dim on customer_id.
+
+    dimensions:
+      - name: id
+        # Composite synthetic key for line-grain uniqueness.
+        sql: "{CUBE}.order_id || '-' || {CUBE}.customer_id::varchar"
+        type: string
+        primary_key: true
+        public: false
+      - name: order_id
+        sql: order_id
+        type: string
+      - name: customer_id
+        sql: customer_id
+        type: number
+      - name: order_processed_at_pst
+        sql: order_processed_at_pst
+        type: time
+      - name: digital_vs_retail
+        sql: digital_vs_retail
+        type: string
+
+    measures:
+      - name: count
+        type: count
+        description: Order line count
+      - name: order_count
+        sql: order_id
+        type: count_distinct
+      - name: customer_count
+        sql: customer_id
+        type: count_distinct
+      - name: line_revenue_sum
+        sql: line_revenue
+        type: sum
+      - name: line_revenue_avg
+        sql: line_revenue
+        type: avg
+      - name: qty_sum
+        sql: qty
+        type: sum

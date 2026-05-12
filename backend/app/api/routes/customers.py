@@ -9,6 +9,7 @@ from ...db import get_db
 from ...services.customer_service import CustomerService
 from ...services.redshift_customer_service import RedshiftCustomerService
 from ...services.duckdb_mart_customer_service import DuckdbMartCustomerService
+from ...services.postgres_customer_service import PostgresCustomerService
 from ...core.config import get_settings
 from ...schemas.customer import (
     CustomerListResponse, CustomerProfileDetail, CustomerProfileSummary,
@@ -18,11 +19,18 @@ from ...schemas.customer import (
 router = APIRouter(prefix="/customers", tags=["customers"])
 settings = get_settings()
 
-MartService = Union[RedshiftCustomerService, DuckdbMartCustomerService]
+MartService = Union[RedshiftCustomerService, DuckdbMartCustomerService, PostgresCustomerService]
 
 
 def _mart_service() -> Optional[MartService]:
-    """Redshift or DuckDB snapshot mart (same API shape). None → use Postgres CustomerService."""
+    """Mart service selector (all share the same API shape).
+
+    Resolution order:
+      1. customer_mart_source=duckdb_snapshot → DuckdbMartCustomerService
+      2. warehouse_mode=redshift              → RedshiftCustomerService
+      3. warehouse_mode=postgres              → PostgresCustomerService
+      4. else (duckdb / unset)                → None (Postgres CustomerService on app metadata)
+    """
     if settings.customer_mart_source == "duckdb_snapshot":
         path = settings.customer_mart_duckdb_path
         if not path:
@@ -39,6 +47,8 @@ def _mart_service() -> Optional[MartService]:
         return DuckdbMartCustomerService(str(p.resolve()))
     if settings.warehouse_mode == "redshift":
         return RedshiftCustomerService()
+    if settings.warehouse_mode == "postgres":
+        return PostgresCustomerService()
     return None
 
 

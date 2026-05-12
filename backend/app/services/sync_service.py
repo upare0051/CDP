@@ -27,21 +27,35 @@ class SyncService:
     # Sync Job Methods
     
     def create_sync_job(self, data: SyncJobCreate) -> SyncJob:
-        """Create a new sync job with field mappings."""
-        # Validate connections exist
-        source = self.db.query(SourceConnection).filter(SourceConnection.id == data.source_connection_id).first()
+        """Create a new sync job with field mappings.
+
+        Accepts two source shapes:
+          (a) Table-based: data.source_connection_id + source_schema/source_table.
+          (b) Segment-based: data.source_segment_id (Cube/legacy segment).
+        """
+        # Validate destination always.
         dest = self.db.query(DestinationConnection).filter(DestinationConnection.id == data.destination_connection_id).first()
-        
-        if not source:
-            raise ValueError(f"Source connection {data.source_connection_id} not found")
         if not dest:
             raise ValueError(f"Destination connection {data.destination_connection_id} not found")
-        
+
+        # Source shape dispatch.
+        if data.source_segment_id is not None:
+            # Local import to avoid a circular import (Segment model).
+            from ..models.segment import Segment as _SegmentModel
+            segment = self.db.query(_SegmentModel).filter(_SegmentModel.id == data.source_segment_id).first()
+            if not segment:
+                raise ValueError(f"Segment {data.source_segment_id} not found")
+        else:
+            source = self.db.query(SourceConnection).filter(SourceConnection.id == data.source_connection_id).first()
+            if not source:
+                raise ValueError(f"Source connection {data.source_connection_id} not found")
+
         # Create sync job
         job = SyncJob(
             name=data.name,
             description=data.description,
             source_connection_id=data.source_connection_id,
+            source_segment_id=data.source_segment_id,
             destination_connection_id=data.destination_connection_id,
             source_schema=data.source_schema,
             source_table=data.source_table,
@@ -107,10 +121,19 @@ class SyncService:
                 func.sum(SyncRun.rows_synced)
             ).scalar() or 0
             
+            # Source name varies by shape: table-source uses the connection
+            # name; segment-source uses "Segment: <name>".
+            if job.source_segment_id and job.source_segment is not None:
+                source_name = f"Segment: {job.source_segment.name}"
+            elif job.source_connection is not None:
+                source_name = job.source_connection.name
+            else:
+                source_name = None
+
             summaries.append(SyncJobSummary(
                 id=job.id,
                 name=job.name,
-                source_connection_name=job.source_connection.name,
+                source_connection_name=source_name,
                 destination_connection_name=job.destination_connection.name,
                 sync_mode=job.sync_mode,
                 schedule_type=job.schedule_type,

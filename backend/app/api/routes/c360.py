@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.services.c360_service import C360RedshiftService
+from app.services.c360_service import get_c360_service
 from app.services.c360_model_health_service import get_model_health
 
 logger = get_logger(__name__)
@@ -83,7 +83,7 @@ def get_reference_schema():
     Return allowlisted C360 table schemas from Redshift information_schema.
     Intended for the Reference page.
     """
-    service = C360RedshiftService()
+    service = get_c360_service()
     return {
         "allowlisted_tables": sorted(service.allowed_tables),
         "schema": service.get_allowlisted_schema(),
@@ -96,7 +96,7 @@ def run_sql(request: RunSqlRequest):
     Read-only allowlisted SQL runner for C360 marts.
     Intended for Explorer-like usage by the Reference/Ask pages.
     """
-    service = C360RedshiftService()
+    service = get_c360_service()
     try:
         result = service.execute_read_query(request.sql, request.limit)
         return {
@@ -122,7 +122,7 @@ def ask_c360(request: ChatRequest):
     - optionally run SQL emitted in <sql> tags
     - anonymize SQL results (drop email/phone; customer_id -> anon_id)
     """
-    service = C360RedshiftService()
+    service = get_c360_service()
 
     # Redact PII in question + history before sending to LLM
     redacted_question, input_pii = service.redact_pii_text(request.question)
@@ -136,7 +136,8 @@ def ask_c360(request: ChatRequest):
 
     # Provide a compact schema policy to the LLM (authoritative allowlist)
     allowlist_lines = "\n".join(f"- {t}" for t in sorted(service.allowed_tables))
-    system_prompt = f"""You are an expert data analyst for C360 running on Amazon Redshift.
+    engine_label = "PostgreSQL" if (settings.warehouse_mode or "").lower() == "postgres" else "Amazon Redshift"
+    system_prompt = f"""You are an expert data analyst for C360 running on {engine_label}.
 
 YOU MUST FOLLOW THESE RULES:
 1) Only generate SELECT queries (or WITH ... SELECT). Never write DDL/DML.

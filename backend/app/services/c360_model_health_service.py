@@ -1,4 +1,8 @@
-"""C360 model health: upstream dbt models of customer_unified_attr + PST daily freshness."""
+"""C360 model health: upstream dbt models of customer_unified_attr + PST daily freshness.
+
+Connection is sourced via `get_c360_service()` so this works against either
+Redshift (prod) or the local Postgres warehouse, depending on warehouse_mode.
+"""
 
 from __future__ import annotations
 
@@ -10,10 +14,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
-import redshift_connector
-
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.services.c360_service import get_c360_service
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -55,19 +58,12 @@ def _load_upstream_items() -> List[Dict[str, Any]]:
 
 
 def _connect():
-    if not settings.redshift_host or not settings.redshift_user or not settings.redshift_database:
-        raise ValueError(
-            "Redshift not configured. Set REDSHIFT_HOST, REDSHIFT_USER, REDSHIFT_DATABASE."
-        )
-    return redshift_connector.connect(
-        host=settings.redshift_host,
-        port=settings.redshift_port,
-        database=settings.redshift_database,
-        user=settings.redshift_user,
-        password=settings.redshift_password,
-        ssl=settings.c360_redshift_ssl,
-        timeout=settings.c360_query_timeout_seconds,
-    )
+    """Return a context-manager-yielding DB connection for the active warehouse.
+
+    Delegates to the C360 service factory so this picks Redshift or Postgres
+    based on settings.warehouse_mode.
+    """
+    return get_c360_service()._connect()
 
 
 def _validate_ident(name: str) -> str:
@@ -185,16 +181,13 @@ def _inspect_one(item: Dict[str, Any], start_today_pst: datetime) -> Dict[str, A
     wcol: Optional[str] = None
     sql_out: Optional[str] = None
     try:
-        conn = _connect()
-        try:
+        with _connect() as conn:
             wcol = _pick_watermark_column(conn, schema, alias)
             if wcol:
                 sql_out = watermark_max_sql(schema, alias, wcol)
                 last = _max_timestamp(conn, schema, alias, wcol)
             else:
                 sql_out = _fallback_watermark_sql(schema, alias)
-        finally:
-            conn.close()
     except Exception as e:
         err = str(e)
         logger.warning("model_health row failed", schema=schema, table=alias, error=err)

@@ -1,14 +1,22 @@
-"""C360 Redshift-backed services (schema + safe read-only query + PII handling)."""
+"""C360 services (schema + safe read-only query + PII handling).
+
+Driver-agnostic base class with two implementations:
+- C360RedshiftService  — production Redshift via redshift_connector
+- C360PostgresService  — local CDP warehouse via psycopg2
+
+Pick the right driver via `get_c360_service()`, which consults
+settings.warehouse_mode.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import re
+from abc import ABC, abstractmethod
+from contextlib import closing
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple
-
-import redshift_connector
+from typing import Any, ContextManager, Dict, List, Optional, Sequence, Tuple
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -37,9 +45,14 @@ def _normalize_table_ref(table_ref: str) -> str:
     return parts[-1].lower() if parts else ""
 
 
-class C360RedshiftService:
+class C360BaseService(ABC):
     """
-    Redshift-backed service for:
+    Driver-agnostic C360 service.
+
+    Subclasses only override `_connect()` (and optionally `_database_label()`).
+    All SQL is ANSI-compatible (information_schema, plain SELECTs).
+
+    Provides:
     - allowlisted schema introspection
     - safe query execution (SELECT/CTE only)
     - PII drop + deterministic anonymization (customer_id -> anon_id)
@@ -58,19 +71,18 @@ class C360RedshiftService:
         self._id_cols = {c.lower() for c in settings.c360_id_cols}
         self._anon_salt = settings.c360_anon_salt
 
-    def _connect(self):
-        if not settings.redshift_host or not settings.redshift_user or not settings.redshift_database:
-            raise ValueError("Redshift not configured. Set REDSHIFT_HOST, REDSHIFT_USER, REDSHIFT_DATABASE (and password if needed).")
+    @abstractmethod
+    def _connect(self) -> ContextManager[Any]:
+        """Return a context manager yielding an open DB connection.
 
-        return redshift_connector.connect(
-            host=settings.redshift_host,
-            port=settings.redshift_port,
-            database=settings.redshift_database,
-            user=settings.redshift_user,
-            password=settings.redshift_password,
-            ssl=settings.c360_redshift_ssl,
-            timeout=settings.c360_query_timeout_seconds,
-        )
+        Both Redshift and Postgres drivers should yield an object exposing
+        the DB-API 2.0 cursor surface (cursor(), close()). The returned CM
+        is responsible for closing the connection on exit.
+        """
+
+    @abstractmethod
+    def _database_label(self) -> Optional[str]:
+        """Display name for the database being queried (for /schema responses)."""
 
     def _anonymize_id(self, value: Any) -> str:
         raw = f"{self._anon_salt}:{value}"
@@ -169,7 +181,7 @@ class C360RedshiftService:
                     }
                 )
 
-        return {"database": settings.redshift_database, "tables": result_tables}
+        return {"database": self._database_label(), "tables": result_tables}
 
     def execute_read_query(self, sql: str, limit: int = 200) -> QueryResult:
         cleaned = sql.strip().rstrip(";")
@@ -226,4 +238,89 @@ class C360RedshiftService:
         except Exception:
             # If redaction broke JSON, just return the structured anonymized rows.
             return rows, True
+
+
+# ---------------------------------------------------------------------------
+# Driver implementations
+# ---------------------------------------------------------------------------
+
+
+class C360RedshiftService(C360BaseService):
+    """Redshift-backed C360 service (production)."""
+
+    def _connect(self):
+        if not settings.redshift_host or not settings.redshift_user or not settings.redshift_database:
+            raise ValueError(
+                "Redshift not configured. Set REDSHIFT_HOST, REDSHIFT_USER, "
+                "REDSHIFT_DATABASE (and password if needed)."
+            )
+        # Imported lazily so the backend can run in Postgres-only environments
+        # without the redshift_connector dependency loaded.
+        import redshift_connector  # noqa: WPS433
+
+        return redshift_connector.connect(
+            host=settings.redshift_host,
+            port=settings.redshift_port,
+            database=settings.redshift_database,
+            user=settings.redshift_user,
+            password=settings.redshift_password,
+            ssl=settings.c360_redshift_ssl,
+            timeout=settings.c360_query_timeout_seconds,
+        )
+
+    def _database_label(self) -> Optional[str]:
+        return settings.redshift_database
+
+
+class C360PostgresService(C360BaseService):
+    """Postgres-backed C360 service (local CDP warehouse).
+
+    Reads from the warehouse-postgres container that mirrors the Redshift
+    gold.* schema. Connection is read-only + autocommit so the same `with`
+    patterns the Redshift driver uses work identically.
+    """
+
+    def _connect(self):
+        if not settings.warehouse_postgres_host or not settings.warehouse_postgres_user:
+            raise ValueError(
+                "Postgres warehouse not configured. Set WAREHOUSE_POSTGRES_HOST, "
+                "WAREHOUSE_POSTGRES_USER, WAREHOUSE_POSTGRES_DB, "
+                "WAREHOUSE_POSTGRES_PASSWORD."
+            )
+        import psycopg2  # noqa: WPS433  (lazy import for optional dependency parity)
+
+        conn = psycopg2.connect(
+            host=settings.warehouse_postgres_host,
+            port=settings.warehouse_postgres_port,
+            dbname=settings.warehouse_postgres_db,
+            user=settings.warehouse_postgres_user,
+            password=settings.warehouse_postgres_password,
+            connect_timeout=settings.c360_query_timeout_seconds,
+        )
+        # Read-only + autocommit: matches Redshift's connection semantics here.
+        conn.set_session(readonly=True, autocommit=True)
+        # `closing()` makes `with self._connect() as conn:` close on exit,
+        # which is psycopg2's behavior only with closing(), not a plain `with`.
+        return closing(conn)
+
+    def _database_label(self) -> Optional[str]:
+        return settings.warehouse_postgres_db
+
+
+# ---------------------------------------------------------------------------
+# Factory
+# ---------------------------------------------------------------------------
+
+
+def get_c360_service() -> C360BaseService:
+    """Return the C360 service implementation for the configured warehouse_mode."""
+    mode = (settings.warehouse_mode or "duckdb").lower()
+    if mode == "redshift":
+        return C360RedshiftService()
+    if mode == "postgres":
+        return C360PostgresService()
+    raise ValueError(
+        f"C360 service does not support warehouse_mode={mode!r}. "
+        f"Use 'postgres' (local) or 'redshift' (production)."
+    )
 

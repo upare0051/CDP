@@ -21,6 +21,27 @@ services:
       retries: 5
 
   # =============================================================================
+  # Warehouse Postgres - CDP demo warehouse (mirrors Redshift gold.* schema)
+  # Seeded from cdp-main/data/demo via cube/scripts/seed_warehouse_from_duckdb.py
+  # or via the alo-meltano local-demo branch.
+  # =============================================================================
+  warehouse-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${WAREHOUSE_POSTGRES_USER:-cdp}
+      POSTGRES_PASSWORD: ${WAREHOUSE_POSTGRES_PASSWORD:-cdp}
+      POSTGRES_DB: ${WAREHOUSE_POSTGRES_DB:-cdp_warehouse}
+    ports:
+      - "${WAREHOUSE_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - warehouse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WAREHOUSE_POSTGRES_USER:-cdp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
   # Cache & Queue - Redis (Cloud-agnostic: works with AWS ElastiCache, GCP Memorystore)
   # =============================================================================
   redis:
@@ -96,15 +117,27 @@ services:
       - STORAGE_USE_SSL=false
       # AI
       # Ask C360 uses an Ollama host process
-      # Demo data source
-      - WAREHOUSE_MODE=duckdb
+      # Demo data source: local Postgres warehouse (mirrors Redshift gold.*)
+      # Override to `duckdb` or `redshift` if you want the previous behavior.
+      - WAREHOUSE_MODE=postgres
+      - WAREHOUSE_POSTGRES_HOST=warehouse-postgres
+      - WAREHOUSE_POSTGRES_PORT=5432
+      - WAREHOUSE_POSTGRES_DB=cdp_warehouse
+      - WAREHOUSE_POSTGRES_USER=cdp
+      - WAREHOUSE_POSTGRES_PASSWORD=cdp
       - "DUCKDB_PATH=:memory:"
+      # Dittofeed (journey orchestration). cdp-main backend proxies to it,
+      # so the workspace lookup stays server-side.
+      - DITTOFEED_API_URL=http://journeys-lite:3000
+      - DITTOFEED_WORKSPACE_ID=${DITTOFEED_WORKSPACE_ID:-}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      warehouse-postgres:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -157,5 +190,6 @@ services:
 
 volumes:
   postgres_data:
+  warehouse_postgres_data:
   redis_data:
   minio_data:

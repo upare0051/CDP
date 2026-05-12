@@ -17,6 +17,16 @@ class SegmentStatus(str, enum.Enum):
     ARCHIVED = "archived"
 
 
+class SegmentSourceType(str, enum.Enum):
+    """How a segment's audience is defined.
+
+    - LEGACY: filter_config against CustomerProfile (app-managed customers).
+    - CUBE:   cube_query against the Cube semantic layer (warehouse-backed).
+    """
+    LEGACY = "legacy"
+    CUBE = "cube"
+
+
 class FilterOperator(str, enum.Enum):
     """Available filter operators."""
     # String operators
@@ -62,10 +72,19 @@ class Segment(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     
-    # Filter configuration (JSON structure)
+    # How this segment is defined.
+    source_type = Column(String(50), nullable=False, default=SegmentSourceType.LEGACY.value)
+
+    # Filter configuration for LEGACY segments (app metadata customers).
     # Format: {"filters": [...], "logic": "AND" | "OR"}
     filter_config = Column(JSON, nullable=False, default={"filters": [], "logic": "AND"})
-    
+
+    # Cube query payload for CUBE segments (warehouse via semantic layer).
+    # Same shape as Cube's `/cubejs-api/v1/load` body, e.g.:
+    #   {"measures": [...], "dimensions": [...], "filters": [...], "limit": N}
+    # Null for legacy segments.
+    cube_query = Column(JSON, nullable=True)
+
     # Segment status
     status = Column(String(50), default=SegmentStatus.DRAFT.value)
     

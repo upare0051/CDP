@@ -1,0 +1,9 @@
+views:
+  - name: customer_unified
+    description: |
+      Fast single-table audience surface. Wraps gold.customer_unified_attr —
+      no joins, ideal for high-volume Reverse ETL audience queries.
+
+    cubes:
+      - join_path: customer_unified_attr
+        includes: "*"

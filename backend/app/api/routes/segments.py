@@ -135,13 +135,18 @@ def preview_segment(
     data: SegmentPreviewRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Preview segment results without saving.
-    Returns count and sample customers.
+    """Preview segment results without saving. Returns count + sample rows.
+
+    Honors data.source_type:
+      - "legacy": filter_config against CustomerProfile.
+      - "cube":   cube_query through the Cube semantic layer.
     """
     service = SegmentService(db)
-    result = service.preview_segment(data.filter_config)
-    return result
+    return service.preview_segment(
+        filter_config=data.filter_config,
+        cube_query=data.cube_query,
+        source_type=data.source_type,
+    )
 
 
 @router.post("/{segment_id}/refresh-count", response_model=SegmentResponse)

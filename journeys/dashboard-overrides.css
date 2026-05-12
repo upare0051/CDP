@@ -1,0 +1,67 @@
+/* ---------------------------------------------------------------------------
+ * Dashboard (Dittofeed) overrides — strip Dittofeed's own chrome so the
+ * journey-builder content can be embedded inside cdp-main's shell.
+ *
+ * Loaded via nginx sub_filter injection on every Dittofeed HTML response.
+ * The CSS is intentionally noisy with !important so it wins against
+ * Material UI's emotion runtime styles.
+ *
+ * cdp-main embeds Dittofeed in an invisible iframe and renders its own
+ * sidebar around it — see frontend/src/pages/JourneyBuilder.tsx. From the
+ * user's perspective Dittofeed appears as a native page in cdp-main.
+ * --------------------------------------------------------------------------- */
+
+/* ---- 1. Hide Dittofeed's entire sidebar so cdp-main's sidebar is the only
+ * navigation surface the user sees. We hide the <nav> wrapper directly;
+ * the per-item aria-label rules below are kept as a safety net in case
+ * Dittofeed restructures the sidebar in a future release.
+ * --------------------------------------------------------------------------- */
+nav {
+  display: none !important;
+}
+
+/* Main content fills the space the sidebar used to occupy. Material UI's
+ * default layout offsets <main> by the drawer width; reset it. */
+main.MuiBox-root {
+  margin-left: 0 !important;
+  padding-left: 24px !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* ---- 2. Safety net: per-item hides if the <nav> rule above is overridden -- */
+span[aria-label="View, create, and edit segments."],           /* Segments → cdp-main owns */
+span[aria-label="View users, and their histories."],           /* Users → cdp-main /customers */
+span[aria-label="Manage the properties which are recorded and computed for users."],
+span[aria-label="Manage subscription groups of users."],
+span[aria-label="View user events."],
+span[aria-label="Contact details."],
+span[aria-label*="Dittofeed"]                                  /* Docs/help links referencing the tool */
+{
+  display: none !important;
+}
+
+/* Bottom "Dittofeed / Customer Engagement" brand card. */
+.MuiCard-root:has(h5.MuiTypography-h5) {
+  display: none !important;
+}
+h6.MuiTypography-h6.mui-style-q548kk {
+  display: none !important;
+}
+
+/* ---- 3. Theme alignment with cdp-main brand colors ---------------------- */
+:root {
+  --cdp-primary: #ff3a5c;
+}
+
+/* Anchors and primary buttons inside Dittofeed pick up cdp-main's accent. */
+.MuiButton-containedPrimary,
+.MuiButton-outlinedPrimary {
+  background-color: var(--cdp-primary) !important;
+  border-color: var(--cdp-primary) !important;
+}
+.MuiButton-textPrimary,
+a.MuiTypography-colorPrimary,
+.MuiLink-root {
+  color: var(--cdp-primary) !important;
+}

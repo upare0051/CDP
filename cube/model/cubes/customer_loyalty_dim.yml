@@ -1,0 +1,38 @@
+cubes:
+  - name: customer_loyalty_dim
+    # SCD2 table: filter to current row so joins are 1:1.
+    sql: "SELECT * FROM gold.customer_loyalty_dim WHERE is_current = true"
+    description: Current loyalty status per customer (SCD2; filtered to is_current).
+
+    dimensions:
+      - name: customer_id
+        sql: customer_id
+        type: number
+        primary_key: true
+        public: false
+      - name: has_loyalty_account
+        sql: has_loyalty_account
+        type: boolean
+      - name: loyalty_enrolled
+        sql: loyalty_enrolled
+        type: boolean
+      - name: loyalty_id
+        sql: loyalty_id
+        type: string
+      - name: loyalty_tier_name
+        sql: loyalty_tier_name
+        type: string
+      - name: membership_expires_at
+        sql: membership_expires_at
+        type: time
+      - name: snapshot_updated_at
+        sql: snapshot_updated_at
+        type: time
+
+    measures:
+      - name: count
+        type: count
+      - name: enrolled_count
+        sql: "CASE WHEN {CUBE}.loyalty_enrolled THEN 1 END"
+        type: count
+        description: Customers currently enrolled in loyalty

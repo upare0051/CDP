@@ -1,0 +1,59 @@
+# Overlay compose for the Cube semantic layer.
+#
+# Run alongside the root docker-compose.yml:
+#   docker compose -f docker-compose.yml -f cube/docker-compose.cube.yml up
+#
+# This file adds two services:
+#   - cube-api            : Cube API + playground (port 4001)
+#   - cubestore           : single-node Cube Store for pre-aggregations
+#
+# `warehouse-postgres` lives in the root docker-compose.yml — it's now
+# infrastructure for the whole app (the backend reads from it when
+# WAREHOUSE_MODE=postgres), not Cube-specific.
+
+version: '3.8'
+
+services:
+  cubestore:
+    # cubejs/cubestore:latest is amd64-only; use the arm64-native tag on
+    # Apple Silicon. Swap to `cubejs/cubestore:latest` on x86 hosts.
+    image: cubejs/cubestore:arm64v8
+    environment:
+      CUBESTORE_REMOTE_DIR: /cube/data
+    volumes:
+      - cubestore_data:/cube/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3030 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cube-api:
+    # Using upstream cubejs/cube:latest for the demo. The custom build from
+    # ${ALO_CUBE_SOURCE} works structurally but the monorepo's prod install
+    # doesn't compile TypeScript dist/ folders, so cubejs-server can't
+    # require its own subpackages. Re-enable the `build:` block below once
+    # `yarn build` is added to packages/cubejs-docker/latest.Dockerfile.
+    #
+    # build:
+    #   context: ${ALO_CUBE_SOURCE:-../alo-data-stack/cube}
+    #   dockerfile: packages/cubejs-docker/latest.Dockerfile
+    # image: ${ALO_CUBE_IMAGE:-alo/cube:custom}
+    image: cubejs/cube:latest
+    env_file:
+      - cube/.env
+    # No host port mapping by default — users access Cube only via nginx at
+    # /cubejs-api/* (JSON, no UI). Re-expose for local debugging via
+    # CUBE_DEV_HOST_PORT env var (uncomment the line below).
+    # ports:
+    #   - "${CUBE_DEV_HOST_PORT:-4001}:4000"
+    volumes:
+      - ./cube:/cube/conf
+    depends_on:
+      warehouse-postgres:
+        condition: service_healthy
+      cubestore:
+        condition: service_started
+
+volumes:
+  cubestore_data:

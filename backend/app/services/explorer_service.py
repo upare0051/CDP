@@ -1,9 +1,13 @@
 """Warehouse-backed data exploration service (schema, ERD hints, read-only SQL).
 
-This service supports two execution modes:
+This service supports three execution modes:
 
 - **redshift**: live, governed reads against allowlisted C360 marts
-- **duckdb**: demo snapshot file materialized from Redshift (manual step)
+- **postgres**: local CDP warehouse mirror of the same marts
+- **duckdb**:   demo snapshot file materialized from Redshift (manual step)
+
+The live-warehouse path (redshift / postgres) is served via the C360 service
+factory, which picks the right driver based on settings.warehouse_mode.
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ from typing import Any, Dict, List, Optional, Set
 import duckdb
 
 from app.core.config import get_settings
-from app.services.c360_service import C360RedshiftService
+from app.services.c360_service import get_c360_service
 
 settings = get_settings()
 
@@ -44,9 +48,12 @@ class ExplorerService:
     TABLE_REF_SQL = re.compile(r"\b(?:from|join)\s+([a-zA-Z0-9_.\"]+)", re.IGNORECASE)
 
     def __init__(self):
-        self.mode = (settings.warehouse_mode or "redshift").lower()
+        self.mode = (settings.warehouse_mode or "postgres").lower()
         self.allowed_tables: Set[str] = {t.lower() for t in settings.c360_allowed_tables}
-        self._c360 = C360RedshiftService()
+        # Lazy: only instantiate the C360 driver when we're actually in a
+        # live-warehouse mode (postgres / redshift). DuckDB mode never
+        # touches the warehouse.
+        self._c360 = None if self.mode == "duckdb" else get_c360_service()
         self._duckdb_path = settings.duckdb_path
 
     # -------------------------------------------------------------------------
@@ -170,7 +177,7 @@ class ExplorerService:
         if self.mode == "duckdb":
             return self._execute_duckdb_snapshot_query(cleaned, limit=limit)
 
-        # Redshift live
+        # Live warehouse (postgres or redshift) — driver picked by factory.
         result = self._c360.execute_read_query(cleaned, limit=limit)
         return QueryResult(
             columns=result.columns,

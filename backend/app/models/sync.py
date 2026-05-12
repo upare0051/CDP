@@ -39,11 +39,15 @@ class SyncJob(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     
-    # Source configuration
-    source_connection_id: Mapped[int] = mapped_column(ForeignKey("source_connections.id"), nullable=False)
-    source_schema: Mapped[str] = mapped_column(String(255), nullable=False)
-    source_table: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Source configuration. Either:
+    #   (a) Table-based: source_connection_id + source_schema + source_table
+    #   (b) Segment-based: source_segment_id (audience resolved via segment)
+    # All three table fields are nullable to support (b).
+    source_connection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("source_connections.id"), nullable=True)
+    source_schema: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source_table: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     source_query: Mapped[Optional[str]] = mapped_column(Text)  # Custom SQL query (optional)
+    source_segment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("segments.id"), nullable=True)
     
     # Destination configuration
     destination_connection_id: Mapped[int] = mapped_column(ForeignKey("destination_connections.id"), nullable=False)
@@ -78,6 +82,7 @@ class SyncJob(Base):
     # Relationships
     source_connection = relationship("SourceConnection", back_populates="sync_jobs")
     destination_connection = relationship("DestinationConnection", back_populates="sync_jobs")
+    source_segment = relationship("Segment", foreign_keys=[source_segment_id])
     field_mappings: Mapped[List["FieldMapping"]] = relationship("FieldMapping", back_populates="sync_job", cascade="all, delete-orphan")
     sync_runs: Mapped[List["SyncRun"]] = relationship("SyncRun", back_populates="sync_job", cascade="all, delete-orphan")
 

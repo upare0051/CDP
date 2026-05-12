@@ -1,0 +1,67 @@
+cubes:
+  - name: customer_contact_prefs_dim
+    sql_table: gold.customer_contact_prefs_dim
+    description: Subscription status across email, SMS, push.
+
+    dimensions:
+      - name: customer_id
+        sql: customer_id
+        type: number
+        primary_key: true
+        public: false
+      - name: email_subscribed
+        sql: email_subscribed
+        type: boolean
+      - name: braze_subscription_status
+        sql: braze_subscription_status
+        type: string
+      - name: email_hard_bounce
+        sql: email_hard_bounce
+        type: boolean
+      - name: email_suppressed
+        sql: email_suppressed
+        type: boolean
+      - name: sms_subscribed
+        sql: sms_subscribed
+        type: boolean
+      - name: sms_status
+        sql: sms_status
+        type: string
+      - name: push_enabled
+        sql: push_enabled
+        type: boolean
+      - name: push_status
+        sql: push_status
+        type: string
+      - name: push_devices_count
+        sql: push_devices_count
+        type: number
+      - name: preferred_comm_channel
+        sql: preferred_comm_channel
+        type: string
+      - name: total_channels_subscribed
+        sql: total_channels_subscribed
+        type: number
+      - name: email_last_status_changed_at
+        sql: email_last_status_changed_at
+        type: time
+      - name: sms_last_status_changed_at
+        sql: sms_last_status_changed_at
+        type: time
+      - name: updated_at
+        sql: updated_at
+        type: time
+
+    measures:
+      - name: count
+        type: count
+      - name: email_reachable_count
+        sql: "CASE WHEN {CUBE}.email_subscribed AND NOT {CUBE}.email_hard_bounce AND NOT {CUBE}.email_suppressed THEN 1 END"
+        type: count
+        description: Customers reachable by email (subscribed, not bounced, not suppressed)
+      - name: sms_reachable_count
+        sql: "CASE WHEN {CUBE}.sms_subscribed THEN 1 END"
+        type: count
+      - name: push_reachable_count
+        sql: "CASE WHEN {CUBE}.push_enabled AND {CUBE}.push_devices_count > 0 THEN 1 END"
+        type: count

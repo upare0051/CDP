@@ -19,6 +19,8 @@ from app.api.routes import (
     activations_router,
     explorer_router,
     c360_router,
+    cube_router,
+    journey_builder_router,
 )
 
 # Setup logging
@@ -96,6 +98,8 @@ app.include_router(segments_router, prefix=settings.api_prefix)
 app.include_router(activations_router, prefix=settings.api_prefix)
 app.include_router(explorer_router, prefix=settings.api_prefix)
 app.include_router(c360_router, prefix=settings.api_prefix)
+app.include_router(cube_router, prefix=settings.api_prefix)
+app.include_router(journey_builder_router, prefix=settings.api_prefix)
 
 
 @app.get("/")

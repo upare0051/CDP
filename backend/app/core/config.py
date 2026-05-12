@@ -79,11 +79,20 @@ class Settings(BaseSettings):
     # ==========================================================================
     # Data Warehouse Sources
     # ==========================================================================
-    warehouse_mode: str = Field(default="duckdb", description="duckdb or redshift")
+    warehouse_mode: str = Field(default="duckdb", description="duckdb, redshift, or postgres")
 
     # dbt / DuckDB transform store
+    # Try to resolve the dbt DuckDB file relative to the repo root. Inside the
+    # docker container the path layout is flatter, so guard the traversal.
+    @staticmethod
+    def _default_dbt_duckdb_path() -> str:
+        try:
+            return str(Path(__file__).resolve().parents[4] / "platform" / "dbt" / "activationos_transform.duckdb")
+        except IndexError:
+            return "/data/dbt/activationos_transform.duckdb"
+
     dbt_duckdb_path: str = Field(
-        default=str((Path(__file__).resolve().parents[4] / "platform" / "dbt" / "activationos_transform.duckdb")),
+        default_factory=lambda: Settings._default_dbt_duckdb_path(),
         description="Path to dbt DuckDB file used for marts"
     )
     
@@ -107,6 +116,33 @@ class Settings(BaseSettings):
     redshift_user: Optional[str] = None
     redshift_password: Optional[str] = None
     redshift_database: Optional[str] = None
+
+    # Postgres warehouse (CDP demo / local).
+    # Reads gold.* tables mirrored from Redshift via Meltano local-demo branch
+    # OR seeded by cube/scripts/seed_warehouse_from_duckdb.py.
+    # Same container that backs Cube (cdp-main/cube/docker-compose.cube.yml).
+    warehouse_postgres_host: Optional[str] = Field(default="localhost")
+    warehouse_postgres_port: int = Field(default=5433)
+    warehouse_postgres_user: Optional[str] = Field(default="cdp")
+    warehouse_postgres_password: Optional[str] = Field(default="cdp")
+    warehouse_postgres_db: Optional[str] = Field(default="cdp_warehouse")
+
+    # Cube semantic layer (audience definition + analytics).
+    # In docker-compose this points at the `cube-api` service.
+    # Outside docker: http://localhost:4001 (host-exposed Cube port).
+    cube_api_url: Optional[str] = Field(default="http://cube-api:4000")
+    # Optional token; Cube dev mode accepts unauthenticated requests, so this
+    # is unset by default but plumbed through for governed deployments.
+    cube_api_secret: Optional[str] = Field(default=None)
+
+    # Dittofeed (journey orchestration backend).
+    # cdp-main proxies through to Dittofeed so the browser only sees one origin
+    # and the workspaceId / write-key stay server-side.
+    dittofeed_api_url: Optional[str] = Field(default="http://journeys-lite:3000")
+    dittofeed_workspace_id: Optional[str] = Field(default=None)
+    # Optional admin/write key — Dittofeed in anonymous mode (our demo default)
+    # doesn't require it; single-tenant deployments will.
+    dittofeed_api_key: Optional[str] = Field(default=None)
 
     # ==========================================================================
     # C360 / Ask (Local-first: Redshift + Ollama)

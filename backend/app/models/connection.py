@@ -13,12 +13,14 @@ class SourceType(str, enum.Enum):
     """Supported source types."""
     REDSHIFT = "redshift"
     DUCKDB = "duckdb"
+    POSTGRES = "postgres"
 
 
 class DestinationType(str, enum.Enum):
     """Supported destination types."""
     BRAZE = "braze"
     ATTENTIVE = "attentive"
+    DITTOFEED = "dittofeed"
 
 
 class SourceConnection(Base):

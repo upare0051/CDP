@@ -7,13 +7,16 @@ from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, cast, Float, String, text
 
-from ..models.segment import Segment, SegmentMembership, SegmentStatus, SEGMENT_FIELDS
+from ..models.segment import (
+    Segment, SegmentMembership, SegmentStatus, SegmentSourceType, SEGMENT_FIELDS,
+)
 from ..models.customer import CustomerProfile, CustomerAttribute
 from ..schemas.segment import (
     SegmentCreate, SegmentUpdate, FilterConfig, FilterCondition,
     SegmentPreviewResponse
 )
 from ..core.logging import get_logger
+from . import cube_client
 
 logger = get_logger(__name__)
 
@@ -25,11 +28,13 @@ class SegmentService:
         self.db = db
 
     def create_segment(self, data: SegmentCreate) -> Segment:
-        """Create a new segment."""
+        """Create a new segment (legacy filter-based or Cube-defined)."""
         segment = Segment(
             name=data.name,
             description=data.description,
-            filter_config=data.filter_config.model_dump(),
+            source_type=data.source_type,
+            filter_config=data.filter_config.model_dump() if data.filter_config else {"filters": [], "logic": "AND"},
+            cube_query=data.cube_query,
             tags=data.tags,
             ai_generated=data.ai_generated,
             ai_prompt=data.ai_prompt,
@@ -38,11 +43,11 @@ class SegmentService:
         self.db.add(segment)
         self.db.commit()
         self.db.refresh(segment)
-        
+
         # Calculate initial count
         self._update_segment_count(segment)
-        
-        logger.info("Created segment", segment_id=segment.id, name=segment.name)
+
+        logger.info("Created segment", segment_id=segment.id, name=segment.name, source_type=segment.source_type)
         return segment
 
     def get_segment(self, segment_id: int) -> Optional[Segment]:
@@ -89,21 +94,18 @@ class SegmentService:
             return None
         
         update_data = data.model_dump(exclude_unset=True)
-        
-        if "filter_config" in update_data and update_data["filter_config"]:
-            update_data["filter_config"] = update_data["filter_config"]
-        
+
         for field, value in update_data.items():
             setattr(segment, field, value)
-        
+
         self.db.commit()
         self.db.refresh(segment)
-        
-        # Recalculate count if filters changed
-        if "filter_config" in update_data:
+
+        # Recalculate count if the audience definition changed.
+        if {"filter_config", "cube_query", "source_type"} & set(update_data.keys()):
             self._update_segment_count(segment)
-        
-        logger.info("Updated segment", segment_id=segment.id)
+
+        logger.info("Updated segment", segment_id=segment.id, source_type=segment.source_type)
         return segment
 
     def delete_segment(self, segment_id: int) -> bool:
@@ -120,34 +122,108 @@ class SegmentService:
 
     def preview_segment(
         self,
-        filter_config: FilterConfig,
+        filter_config: Optional[FilterConfig] = None,
+        cube_query: Optional[Dict[str, Any]] = None,
+        source_type: str = SegmentSourceType.LEGACY.value,
         sample_size: int = 5,
     ) -> SegmentPreviewResponse:
-        """
-        Preview a segment query - returns count and sample customers.
+        """Preview a segment query — returns count and sample customers.
+
+        Dispatches on `source_type`:
+          - legacy: filters CustomerProfile via SQLAlchemy.
+          - cube:   runs the Cube query through cube_client.
         """
         start_time = time.time()
-        
-        # Build the query
-        query = self._build_segment_query(filter_config)
-        
-        # Get count
-        count = query.count()
-        
-        # Get sample customers
-        sample_customers = []
-        if count > 0:
-            samples = query.limit(sample_size).all()
-            for customer in samples:
-                sample_customers.append(self._customer_to_dict(customer))
-        
+
+        if source_type == SegmentSourceType.CUBE.value:
+            sample_customers = self._preview_via_cube(cube_query or {}, sample_size)
+            count = self._count_via_cube(cube_query or {})
+        else:
+            cfg = filter_config or FilterConfig()
+            query = self._build_segment_query(cfg)
+            count = query.count()
+            sample_customers = []
+            if count > 0:
+                for customer in query.limit(sample_size).all():
+                    sample_customers.append(self._customer_to_dict(customer))
+
         query_time_ms = (time.time() - start_time) * 1000
-        
+
         return SegmentPreviewResponse(
             count=count,
             sample_customers=sample_customers,
             query_time_ms=round(query_time_ms, 2),
+            source_type=source_type,
         )
+
+    def _preview_via_cube(self, cube_query: Dict[str, Any], sample_size: int) -> List[Dict[str, Any]]:
+        """Run a Cube query (with limit overridden to sample_size) and return rows."""
+        if not cube_query:
+            return []
+        # Override limit for the sample call; the underlying audience query
+        # likely has a different limit set.
+        sample_q = {**cube_query, "limit": sample_size}
+        try:
+            result = cube_client.cube_load(sample_q)
+            return result.get("data", []) or []
+        except (cube_client.CubeQueryError, cube_client.CubeUnavailableError) as e:
+            logger.warning("cube preview failed", error=str(e))
+            return []
+
+    def _count_via_cube(self, cube_query: Dict[str, Any]) -> int:
+        """Return total matching rows for a Cube-defined audience.
+
+        Strategy:
+        - If the query already has a single measure and no dimensions, the
+          response is the aggregate count.
+        - Otherwise, derive a count-only twin: same filters, no dimensions/
+          order/limit, with the cube's `.count` measure. Avoids Cube's
+          per-query row-limit silently capping the audience size.
+        """
+        if not cube_query:
+            return 0
+        try:
+            count_q = self._derive_count_query(cube_query)
+            if count_q is None:
+                # Fallback: just count returned rows (capped by Cube limit).
+                return cube_client.count_query(cube_query) or 0
+            return cube_client.count_query(count_q) or 0
+        except (cube_client.CubeQueryError, cube_client.CubeUnavailableError) as e:
+            logger.warning("cube count failed", error=str(e))
+            return 0
+
+    @staticmethod
+    def _derive_count_query(cube_query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Build a count-only twin of a row-level Cube query.
+
+        Picks the source cube/view from the first dimension or filter member,
+        and uses `<cube>.count` as the measure. Returns None if the query is
+        already aggregate-only (just measures).
+        """
+        dims = cube_query.get("dimensions") or []
+        measures = cube_query.get("measures") or []
+
+        # Aggregate-only query — let count_query handle it.
+        if measures and not dims:
+            return None
+
+        # Determine the cube/view name from a dimension or filter.
+        source = None
+        if dims:
+            source = dims[0].split(".", 1)[0]
+        else:
+            for f in cube_query.get("filters") or []:
+                member = f.get("member") or ""
+                if "." in member:
+                    source = member.split(".", 1)[0]
+                    break
+        if not source:
+            return None
+
+        return {
+            "measures": [f"{source}.count"],
+            "filters": cube_query.get("filters", []),
+        }
 
     def get_segment_customers(
         self,
@@ -324,17 +400,20 @@ class SegmentService:
             return None
 
     def _update_segment_count(self, segment: Segment):
-        """Update the cached count for a segment."""
+        """Update the cached count for a segment (legacy or Cube)."""
         try:
-            filter_config = FilterConfig(**segment.filter_config)
-            query = self._build_segment_query(filter_config)
-            count = query.count()
-            
+            if segment.source_type == SegmentSourceType.CUBE.value:
+                count = self._count_via_cube(segment.cube_query or {})
+            else:
+                filter_config = FilterConfig(**(segment.filter_config or {"filters": [], "logic": "AND"}))
+                query = self._build_segment_query(filter_config)
+                count = query.count()
+
             segment.estimated_count = count
             segment.last_count_at = datetime.utcnow()
             self.db.commit()
-            
-            logger.info("Updated segment count", segment_id=segment.id, count=count)
+
+            logger.info("Updated segment count", segment_id=segment.id, count=count, source_type=segment.source_type)
         except Exception as e:
             logger.error(f"Failed to update segment count: {e}", segment_id=segment.id)
 
@@ -390,7 +469,9 @@ class SegmentService:
         new_segment = Segment(
             name=new_name or f"{original.name} (copy)",
             description=original.description,
+            source_type=original.source_type,
             filter_config=original.filter_config,
+            cube_query=original.cube_query,
             tags=original.tags,
             status=SegmentStatus.DRAFT.value,
         )

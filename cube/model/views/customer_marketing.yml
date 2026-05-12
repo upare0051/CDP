@@ -1,0 +1,37 @@
+views:
+  - name: customer_marketing
+    description: |
+      Curated audience-building surface for marketing / Reverse ETL syncs.
+      Combines contact identifiers, channel reachability, loyalty tier, and
+      RFM-style behavior into a focused column set. Drop into cdp-main's
+      sync flow as the canonical "who can we reach, and how" view.
+
+    cubes:
+      - join_path: customer_unified_attr
+        includes:
+          - customer_id
+          - email
+          - phone
+          - state
+          - country_code
+          - loyalty_enrolled
+          - loyalty_tier_name
+          - email_subscribed
+          - sms_subscribed
+          - push_enabled
+          - preferred_comm_channel
+          - total_channels_subscribed
+          - last_order_date
+          - days_since_last_order
+          - orders_last_52_weeks
+          - revenue_last_52_weeks
+          - total_orders_l3y
+          - total_revenue_l3y
+          - digital_geo_segment
+          - omni_geo_segment
+          - count
+          - email_reachable_count
+          - sms_reachable_count
+          - loyalty_enrolled_count
+          - revenue_last_52_weeks_sum
+          - total_revenue_l3y_sum

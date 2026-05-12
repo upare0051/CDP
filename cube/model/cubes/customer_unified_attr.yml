@@ -1,0 +1,180 @@
+cubes:
+  - name: customer_unified_attr
+    sql_table: gold.customer_unified_attr
+    description: |
+      Pre-joined wide customer attribute table. One row per customer covering
+      identity, address, loyalty, geo, contact prefs, RFM and Aloversary
+      participation flags. Use this for fast single-table audience queries
+      where joins are unnecessary.
+
+    dimensions:
+      - name: customer_id
+        sql: customer_id
+        type: number
+        primary_key: true
+        public: true
+
+      # ----- Identity -----
+      - name: email
+        sql: email
+        type: string
+      - name: phone
+        sql: phone
+        type: string
+
+      # ----- Address -----
+      - name: country_code
+        sql: country_code
+        type: string
+      - name: state
+        sql: state
+        type: string
+      - name: zip_code
+        sql: zip_code
+        type: string
+
+      # ----- Loyalty -----
+      - name: loyalty_enrolled
+        sql: loyalty_enrolled
+        type: boolean
+      - name: loyalty_tier_name
+        sql: loyalty_tier_name
+        type: string
+      - name: membership_expires_at
+        sql: membership_expires_at
+        type: time
+
+      # ----- Geo segments -----
+      - name: digital_geo_segment
+        sql: digital_geo_segment
+        type: string
+      - name: omni_geo_segment
+        sql: omni_geo_segment
+        type: string
+      - name: domestic_international_customer
+        sql: domestic_international_customer
+        type: string
+
+      # ----- Channel subscription status -----
+      - name: email_subscribed
+        sql: email_subscribed
+        type: boolean
+      - name: braze_subscription_status
+        sql: braze_subscription_status
+        type: string
+      - name: email_hard_bounce
+        sql: email_hard_bounce
+        type: boolean
+      - name: email_suppressed
+        sql: email_suppressed
+        type: boolean
+      - name: sms_subscribed
+        sql: sms_subscribed
+        type: boolean
+      - name: sms_status
+        sql: sms_status
+        type: string
+      - name: push_enabled
+        sql: push_enabled
+        type: boolean
+      - name: push_devices_count
+        sql: push_devices_count
+        type: number
+      - name: preferred_comm_channel
+        sql: preferred_comm_channel
+        type: string
+      - name: total_channels_subscribed
+        sql: total_channels_subscribed
+        type: number
+
+      # ----- RFM -----
+      - name: first_order_date
+        sql: first_order_date
+        type: time
+      - name: last_order_date
+        sql: last_order_date
+        type: time
+      - name: days_since_first_order
+        sql: days_since_first_order
+        type: number
+      - name: days_since_last_order
+        sql: days_since_last_order
+        type: number
+      - name: orders_last_52_weeks
+        sql: orders_last_52_weeks
+        type: number
+      - name: revenue_last_52_weeks
+        sql: revenue_last_52_weeks
+        type: number
+      - name: total_orders_l3y
+        sql: total_orders_l3y
+        type: number
+      - name: total_revenue_l3y
+        sql: total_revenue_l3y
+        type: number
+      - name: total_units_l3y
+        sql: total_units_l3y
+        type: number
+
+      # ----- Aloversary participation flags -----
+      - name: participated_fy2023_aloversary
+        sql: participated_fy2023_aloversary
+        type: number
+      - name: participated_fy2024_aloversary
+        sql: participated_fy2024_aloversary
+        type: number
+      - name: participated_fy2025_aloversary
+        sql: participated_fy2025_aloversary
+        type: number
+      - name: participated_fy2026_aloversary
+        sql: participated_fy2026_aloversary
+        type: number
+
+    measures:
+      - name: count
+        type: count
+      - name: total_revenue_l3y_sum
+        sql: total_revenue_l3y
+        type: sum
+      - name: revenue_last_52_weeks_sum
+        sql: revenue_last_52_weeks
+        type: sum
+      - name: email_reachable_count
+        sql: "CASE WHEN {CUBE}.email_subscribed AND NOT {CUBE}.email_hard_bounce AND NOT
+          {CUBE}.email_suppressed THEN 1 END"
+        type: count
+        description: Email-reachable customers
+      - name: sms_reachable_count
+        sql: "CASE WHEN {CUBE}.sms_subscribed THEN 1 END"
+        type: count
+      - name: loyalty_enrolled_count
+        sql: "CASE WHEN {CUBE}.loyalty_enrolled THEN 1 END"
+        type: count
+
+    pre_aggregations:
+      # Aggregate rollup for marketing dashboards (counts/revenue sliced by
+      # the most-queried segmentation dimensions). Materialized into Cube
+      # Store; refreshed hourly. Audience EXTRACTION (row-level customer_id
+      # lookups) is served directly by Postgres + the indexes added in
+      # cube/scripts/warehouse_indexes.sql.
+      - name: marketing_rollup
+        measures:
+          - count
+          - total_revenue_l3y_sum
+          - revenue_last_52_weeks_sum
+          - email_reachable_count
+          - sms_reachable_count
+          - loyalty_enrolled_count
+        dimensions:
+          - loyalty_tier_name
+          - loyalty_enrolled
+          - digital_geo_segment
+          - omni_geo_segment
+          - domestic_international_customer
+          - state
+          - country_code
+          - email_subscribed
+          - sms_subscribed
+          - preferred_comm_channel
+        refresh_key:
+          every: 1 hour

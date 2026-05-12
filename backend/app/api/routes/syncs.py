@@ -201,11 +201,16 @@ def check_schema_changes(
 def _build_job_response(job, service: SyncService) -> SyncJobResponse:
     """Build job response with computed fields."""
     last_run = service.get_latest_run(job.id)
-    
+
     response = SyncJobResponse.model_validate(job)
-    response.source_connection_name = job.source_connection.name
+    # Segment-driven syncs have no source_connection; surface the segment
+    # name instead so the UI has something to show.
+    if job.source_segment_id is not None and job.source_segment is not None:
+        response.source_connection_name = f"Segment: {job.source_segment.name}"
+    elif job.source_connection is not None:
+        response.source_connection_name = job.source_connection.name
     response.destination_connection_name = job.destination_connection.name
     response.last_run_status = last_run.status if last_run else None
     response.last_run_at = last_run.started_at if last_run else None
-    
+
     return response

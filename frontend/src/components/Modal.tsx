@@ -39,25 +39,24 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 dark:bg-black/70" onClick={onClose} />
       
       {/* Modal */}
       <div
         className={cn(
-          'relative w-full bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-md shadow-xl',
+          'relative w-full border border-alo-mercury bg-white shadow-lg dark:border-neutral-800 dark:bg-black',
           'animate-fade-in',
           sizes[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-black dark:text-white">{title}</h2>
+        <div className="flex items-center justify-between border-b border-alo-mercury px-6 py-4 dark:border-neutral-800">
+          <h2 className="font-tag text-xs font-semibold uppercase tracking-[0.14em] text-black dark:text-white">{title}</h2>
           <button
+            type="button"
+            aria-label="Close modal"
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-500 hover:text-black dark:hover:text-white transition-colors"
+            className="p-2 text-gray-500 transition-colors hover:bg-alo-smoke hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>

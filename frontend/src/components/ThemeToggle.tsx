@@ -19,18 +19,18 @@ export default function ThemeToggle({ className, showLabel = false }: ThemeToggl
   return (
     <div className={cn("flex items-center", className)}>
       {showLabel && (
-        <span className="mr-3 text-xs font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Theme</span>
+        <span className="mr-3 font-tag text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-neutral-400">Theme</span>
       )}
-      <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-full">
+      <div className="flex items-center border border-alo-mercury bg-white dark:border-neutral-700 dark:bg-black">
         {themes.map(({ value, icon: Icon, label }) => (
           <button
             key={value}
             onClick={() => setTheme(value)}
             className={cn(
-              "p-2 rounded-full transition-all duration-200",
+              "border-r border-alo-mercury p-2 transition-colors duration-150 last:border-r-0 dark:border-neutral-700",
               theme === value
-                ? "bg-black dark:bg-white text-white dark:text-black"
-                : "text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "text-gray-500 hover:bg-alo-smoke hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-white"
             )}
             title={label}
           >
@@ -50,9 +50,9 @@ export function ThemeToggleButton({ className }: { className?: string }) {
     <button
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
       className={cn(
-        "p-2 rounded-full transition-colors border border-transparent",
-        "text-neutral-600 hover:text-black hover:bg-neutral-100 hover:border-neutral-300",
-        "dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900 dark:hover:border-neutral-700",
+        "border border-alo-mercury p-2 transition-colors",
+        "text-gray-500 hover:bg-alo-smoke hover:text-black",
+        "dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-white",
         className
       )}
       title={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}

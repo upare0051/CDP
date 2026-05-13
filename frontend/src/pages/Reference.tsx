@@ -12,7 +12,7 @@ type C360Column = { name: string; type: string };
 type C360Table = { table_reference: string; columns: C360Column[] };
 
 function ScdBadge({ type }: { type: string }) {
-  const colors: Record<string, string> = { SCD1: '#3b82f6', SCD2: '#8b5cf6', Table: '#10b981' };
+  const colors: Record<string, string> = { SCD1: '#7183b0', SCD2: '#384669', Table: '#758e6d' };
   return (
     <span className="ref-scd-badge" style={{ background: colors[type] || '#6b7280' }}>
       {type}
@@ -31,7 +31,7 @@ function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 1500);
       }}
     >
-      {copied ? '✓ Copied' : '📋 Copy'}
+      {copied ? 'Copied' : 'Copy'}
     </button>
   );
 }
@@ -191,7 +191,7 @@ function ModelDetail({ model }: any) {
       </div>
       <div className="ref-sql-section">
         <div className="ref-sql-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <h4 style={{ margin: 0, fontSize: 14, color: '#1e293b' }}>Sample Query</h4>
+          <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)' }}>Sample Query</h4>
           <CopyButton text={model.sampleSql} />
         </div>
         <pre className="ref-sql-block"><code>{model.sampleSql}</code></pre>
@@ -363,11 +363,11 @@ export default function Reference() {
             <div className="ref-model-overview">Common terms used across marts and segmentation logic.</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
               {GLOSSARY.map((g: any) => (
-                <div key={g.term} style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 8 }}>
+                <div key={g.term} style={{ padding: '10px 14px', background: 'var(--sheet-secondary)' }}>
                   <div style={{ fontWeight: 600, marginBottom: 3 }}>
-                    <code style={{ background: '#e2e8f0', padding: '1px 6px', borderRadius: 3 }}>{g.term}</code>
+                    <code style={{ background: 'rgb(var(--c-mercury))', padding: '1px 6px' }}>{g.term}</code>
                   </div>
-                  <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.45 }}>{g.definition}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-body)', lineHeight: 1.45 }}>{g.definition}</div>
                 </div>
               ))}
             </div>
@@ -377,4 +377,3 @@ export default function Reference() {
     </div>
   );
 }
-

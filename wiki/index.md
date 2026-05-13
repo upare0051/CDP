@@ -13,6 +13,7 @@ _(none yet)_
 ## Investigations
 
 - [journey-builder-integration](investigations/journey-builder-integration.md) — Notes on the Dittofeed/Laudspeaker-compatible Journey Builder embed, native API proxy, workspace discovery, destination adapter exposure, shell-matched iframe styling, and `/dashboard` proxy routing.
+- [segment-dittofeed-mirror](investigations/segment-dittofeed-mirror.md) — Mirroring active CDP segments into Dittofeed as Manual segments so they appear in the journey builder's "Wait For" dropdown; identifier contract and dittofeed-lite compute-workflow caveat.
 
 ## References
 

@@ -16,7 +16,7 @@ from ..core.logging import get_logger
 from ..models.segment import Segment, SegmentSourceType
 from ..models.segment_refresh import SegmentRefreshRun
 from ..schemas.segment import FilterConfig
-from . import cube_client
+from . import cube_client, dittofeed_client
 from .segment_service import SegmentService
 
 logger = get_logger(__name__)
@@ -80,6 +80,7 @@ class SegmentMaterializationService:
             self.db.commit()
             self.db.refresh(run)
             logger.info("Segment materialized to Redshift", segment_id=segment.id, run_id=run.run_id, rows=row_count)
+            self._mirror_membership_to_dittofeed(segment, rows)
             return run
         except Exception as e:
             self.db.rollback()
@@ -356,6 +357,45 @@ class SegmentMaterializationService:
                 ({", ".join(insert_columns)})
             VALUES ({", ".join(value_exprs)})
         """
+
+    # ------------------------------------------------------------------
+    # Dittofeed mirror — push current members so the mirrored Manual segment
+    # actually advances users in the journey engine. Best-effort: a failure
+    # here must not roll back the Redshift run.
+    # ------------------------------------------------------------------
+    def _mirror_membership_to_dittofeed(
+        self, segment: Segment, rows: List[Dict[str, Any]]
+    ) -> None:
+        df_id = segment.dittofeed_segment_id
+        if not df_id:
+            return
+        user_ids: List[str] = []
+        for row in rows:
+            ext = row.get("external_id")
+            if ext is not None and ext != "":
+                user_ids.append(str(ext))
+        if not user_ids:
+            logger.info(
+                "Dittofeed mirror membership skipped: no external_id in rows",
+                segment_id=segment.id,
+            )
+            return
+        try:
+            dittofeed_client.update_manual_segment_members(
+                df_id, user_ids, append=True
+            )
+            logger.info(
+                "Pushed segment membership to Dittofeed",
+                segment_id=segment.id,
+                dittofeed_segment_id=df_id,
+                count=len(user_ids),
+            )
+        except dittofeed_client.DittofeedError as e:
+            logger.warning(
+                "Dittofeed membership push failed",
+                segment_id=segment.id,
+                error=str(e),
+            )
 
     def _extract_customer_id(self, row: Dict[str, Any]) -> int:
         for key in ("cust_id", "customer_id", "id"):

@@ -39,6 +39,28 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created")
 
+    # Lightweight in-place migrations for columns added after a deployment
+    # has already created the schema. `create_all` only creates missing
+    # tables, not missing columns. Keep these idempotent and dialect-aware.
+    try:
+        from sqlalchemy import text as _sql_text
+        with engine.begin() as conn:
+            if engine.dialect.name == "postgresql":
+                conn.execute(_sql_text(
+                    "ALTER TABLE segments ADD COLUMN IF NOT EXISTS "
+                    "dittofeed_segment_id VARCHAR(64)"
+                ))
+            elif engine.dialect.name == "sqlite":
+                cols = [row[1] for row in conn.exec_driver_sql(
+                    "PRAGMA table_info(segments)"
+                ).fetchall()]
+                if "dittofeed_segment_id" not in cols:
+                    conn.exec_driver_sql(
+                        "ALTER TABLE segments ADD COLUMN dittofeed_segment_id VARCHAR(64)"
+                    )
+    except Exception as e:
+        logger.warning("In-place column migration failed", error=str(e))
+
     # Ensure demo-safe SQL views are available for Explorer.
     try:
         if engine.dialect.name != "sqlite":

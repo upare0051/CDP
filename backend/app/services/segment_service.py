@@ -16,7 +16,7 @@ from ..schemas.segment import (
     SegmentPreviewResponse
 )
 from ..core.logging import get_logger
-from . import cube_client
+from . import cube_client, dittofeed_client
 
 logger = get_logger(__name__)
 
@@ -439,12 +439,13 @@ class SegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             return None
-        
+
         segment.status = SegmentStatus.ACTIVE.value
         self.db.commit()
         self.db.refresh(segment)
-        
+
         logger.info("Activated segment", segment_id=segment.id)
+        self._mirror_to_dittofeed(segment)
         return segment
 
     def archive_segment(self, segment_id: int) -> Optional[Segment]:
@@ -452,13 +453,63 @@ class SegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             return None
-        
+
         segment.status = SegmentStatus.ARCHIVED.value
         self.db.commit()
         self.db.refresh(segment)
-        
+
         logger.info("Archived segment", segment_id=segment.id)
+        self._unmirror_from_dittofeed(segment)
         return segment
+
+    # ------------------------------------------------------------------
+    # Dittofeed mirror — keep active CDP segments visible in the journey
+    # builder's "Wait For" dropdown. Failures are logged but never raised:
+    # Dittofeed availability must not block CDP-side activate/archive.
+    # ------------------------------------------------------------------
+    def _mirror_to_dittofeed(self, segment: Segment) -> None:
+        try:
+            existing = segment.dittofeed_segment_id
+            df_id = dittofeed_client.upsert_manual_segment(
+                name=segment.name,
+                existing_id=existing,
+            )
+            if df_id != existing:
+                segment.dittofeed_segment_id = df_id
+                self.db.commit()
+                self.db.refresh(segment)
+            logger.info(
+                "Mirrored segment to Dittofeed",
+                segment_id=segment.id,
+                dittofeed_segment_id=df_id,
+            )
+        except dittofeed_client.DittofeedError as e:
+            logger.warning(
+                "Dittofeed mirror upsert failed",
+                segment_id=segment.id,
+                error=str(e),
+            )
+
+    def _unmirror_from_dittofeed(self, segment: Segment) -> None:
+        df_id = segment.dittofeed_segment_id
+        if not df_id:
+            return
+        try:
+            dittofeed_client.delete_segment(df_id)
+            segment.dittofeed_segment_id = None
+            self.db.commit()
+            self.db.refresh(segment)
+            logger.info(
+                "Removed segment from Dittofeed",
+                segment_id=segment.id,
+                dittofeed_segment_id=df_id,
+            )
+        except dittofeed_client.DittofeedError as e:
+            logger.warning(
+                "Dittofeed mirror delete failed",
+                segment_id=segment.id,
+                error=str(e),
+            )
 
     def duplicate_segment(self, segment_id: int, new_name: Optional[str] = None) -> Optional[Segment]:
         """Create a copy of an existing segment."""

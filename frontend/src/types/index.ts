@@ -1,7 +1,7 @@
 // API Types
 
 export type SourceType = 'redshift' | 'duckdb';
-export type DestinationType = 'braze' | 'attentive';
+export type DestinationType = 'braze' | 'attentive' | 'dittofeed';
 export type SyncMode = 'full_refresh' | 'incremental';
 export type SyncStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type ScheduleType = 'manual' | 'cron';

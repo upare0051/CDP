@@ -53,26 +53,23 @@ export default function JourneyBuilder() {
   }, [safeSub]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] -m-6 animate-fade-in">
-      {/* Subtle toolbar — no Dittofeed branding shown */}
-      <div className="flex items-center justify-end px-4 py-2 border-b border-gray-200 dark:border-gray-800">
-        <button
-          type="button"
-          onClick={() => setReloadKey((k) => k + 1)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          title="Reload Journey Builder"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Reload
-        </button>
-      </div>
+    <div className="relative h-screen -mx-6 -my-10 animate-fade-in sm:-mx-8 lg:-mx-14 lg:-my-16">
+      <button
+        type="button"
+        onClick={() => setReloadKey((k) => k + 1)}
+        className="absolute right-4 top-3 z-10 inline-flex items-center gap-1.5 bg-white/90 px-2.5 py-1 text-xs text-gray-500 shadow-sm backdrop-blur hover:text-gray-900 dark:bg-gray-950/90 dark:text-gray-400 dark:hover:text-gray-100"
+        title="Reload Journey Builder"
+      >
+        <RefreshCw className="w-3.5 h-3.5" />
+        Reload
+      </button>
 
       {/* Full-bleed iframe — Dittofeed UI minus its own chrome */}
       <iframe
         key={`${safeSub}-${reloadKey}`}
         src={iframeSrc}
         title="Journey Builder"
-        className="flex-1 w-full border-0 bg-white dark:bg-gray-950"
+        className="h-full w-full border-0 bg-white dark:bg-gray-950"
         allow="clipboard-read; clipboard-write"
       />
     </div>

@@ -11,6 +11,7 @@ Deliveries (read-only table) and grow from here.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Optional
 
 import httpx
@@ -42,6 +43,12 @@ def _headers() -> Dict[str, str]:
 
 
 _cached_workspace_id: Optional[str] = None
+_WORKSPACE_ID_RE = re.compile(r'"workspaceId"\s*:\s*"([0-9a-fA-F-]{36})"')
+
+
+def _extract_workspace_id(payload: str) -> Optional[str]:
+    match = _WORKSPACE_ID_RE.search(payload)
+    return match.group(1) if match else None
 
 
 def _workspace_id() -> str:
@@ -52,6 +59,8 @@ def _workspace_id() -> str:
       2. cached lookup from a previous call
       3. live discovery: GET /api/workspaces — pick the first one
          (zero-config for the single-workspace demo setup)
+      4. dashboard payload discovery for Dittofeed lite images that do not
+         expose /api/workspaces
     """
     global _cached_workspace_id
     if settings.dittofeed_workspace_id:
@@ -72,9 +81,21 @@ def _workspace_id() -> str:
                     return _cached_workspace_id
     except Exception as e:
         logger.warning("dittofeed workspace auto-discovery failed", error=str(e))
+
+    try:
+        url = f"{_base_url()}/dashboard/journeys"
+        with httpx.Client(timeout=10, headers=_headers()) as client:
+            resp = client.get(url)
+        if resp.is_success:
+            _cached_workspace_id = _extract_workspace_id(resp.text)
+            if _cached_workspace_id:
+                return _cached_workspace_id
+    except Exception as e:
+        logger.warning("dittofeed dashboard workspace discovery failed", error=str(e))
+
     raise DittofeedError(
         "Could not resolve Dittofeed workspace ID. Set DITTOFEED_WORKSPACE_ID or "
-        "ensure GET /api/workspaces returns at least one workspace."
+        "ensure the Dittofeed dashboard is reachable."
     )
 
 

@@ -116,5 +116,12 @@ def get_available_types():
                 "required_fields": ["api_key"],
                 "optional_fields": ["attentive_api_url"],
             },
+            {
+                "id": "dittofeed",
+                "name": "Journey Builder",
+                "description": "Laudspeaker-compatible journey orchestration",
+                "required_fields": ["api_key"],
+                "optional_fields": ["api_endpoint"],
+            },
         ]
     }

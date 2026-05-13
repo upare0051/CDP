@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Send, Plus, Trash2, TestTube, Check, X, Flame, MessageSquare } from 'lucide-react';
+import { Send, Plus, Trash2, TestTube, Check, X, Flame, MessageSquare, Workflow } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardContent } from '@/components/Card';
 import Button from '@/components/Button';
@@ -16,7 +16,14 @@ import type { DestinationConnectionCreate, DestinationType } from '@/types';
 const destinationTypeOptions = [
   { value: 'braze', label: 'Braze' },
   { value: 'attentive', label: 'Attentive' },
-];
+  { value: 'dittofeed', label: 'Journey Builder' },
+] satisfies { value: DestinationType; label: string }[];
+
+const destinationLabels: Record<DestinationType, string> = {
+  braze: 'Braze',
+  attentive: 'Attentive',
+  dittofeed: 'Journey Builder',
+};
 
 const brazeEndpoints = [
   { value: 'https://rest.iad-01.braze.com', label: 'US-01' },
@@ -25,16 +32,19 @@ const brazeEndpoints = [
   { value: 'https://rest.fra-01.braze.eu', label: 'EU-01' },
 ];
 
+const buildDefaultFormData = (destinationType: DestinationType = 'braze'): DestinationConnectionCreate => ({
+  name: '',
+  destination_type: destinationType,
+  api_key: '',
+  api_endpoint: destinationType === 'braze' ? 'https://rest.iad-01.braze.com' : '',
+  braze_app_id: destinationType === 'braze' ? '' : undefined,
+  attentive_api_url: destinationType === 'attentive' ? '' : undefined,
+  batch_size: destinationType === 'dittofeed' ? 100 : 75,
+});
+
 export default function Destinations() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState<DestinationConnectionCreate>({
-    name: '',
-    destination_type: 'braze',
-    api_key: '',
-    api_endpoint: 'https://rest.iad-01.braze.com',
-    braze_app_id: '',
-    batch_size: 75,
-  });
+  const [formData, setFormData] = useState<DestinationConnectionCreate>(buildDefaultFormData());
 
   const queryClient = useQueryClient();
   const { data: destinations, isLoading } = useQuery({ queryKey: ['destinations'], queryFn: getDestinations });
@@ -73,14 +83,15 @@ export default function Destinations() {
   });
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      destination_type: 'braze',
-      api_key: '',
-      api_endpoint: 'https://rest.iad-01.braze.com',
-      braze_app_id: '',
-      batch_size: 75,
-    });
+    setFormData(buildDefaultFormData());
+  };
+
+  const handleDestinationTypeChange = (destinationType: DestinationType) => {
+    setFormData((prev) => ({
+      ...buildDefaultFormData(destinationType),
+      name: prev.name,
+      api_key: prev.api_key,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,17 +121,23 @@ export default function Destinations() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      dest.destination_type === 'braze' ? 'bg-orange-500/10' : 'bg-purple-500/10'
+                      dest.destination_type === 'braze'
+                        ? 'bg-orange-500/10'
+                        : dest.destination_type === 'dittofeed'
+                          ? 'bg-blue-500/10'
+                          : 'bg-purple-500/10'
                     }`}>
                       {dest.destination_type === 'braze' ? (
                         <Flame className="w-6 h-6 text-orange-400" />
+                      ) : dest.destination_type === 'dittofeed' ? (
+                        <Workflow className="w-6 h-6 text-blue-400" />
                       ) : (
                         <MessageSquare className="w-6 h-6 text-purple-400" />
                       )}
                     </div>
                     <div>
                       <h3 className="font-semibold text-surface-100">{dest.name}</h3>
-                      <p className="text-sm text-surface-500 capitalize">{dest.destination_type}</p>
+                      <p className="text-sm text-surface-500">{destinationLabels[dest.destination_type]}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -205,13 +222,13 @@ export default function Destinations() {
             label="Destination Type"
             options={destinationTypeOptions}
             value={formData.destination_type}
-            onChange={(e) => setFormData({ ...formData, destination_type: e.target.value as DestinationType })}
+            onChange={(e) => handleDestinationTypeChange(e.target.value as DestinationType)}
           />
 
           <Input
-            label="API Key"
+            label={formData.destination_type === 'dittofeed' ? 'Write Key' : 'API Key'}
             type="password"
-            placeholder="Your API key"
+            placeholder={formData.destination_type === 'dittofeed' ? 'Journey Builder write key' : 'Your API key'}
             value={formData.api_key}
             onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
             required
@@ -243,13 +260,28 @@ export default function Destinations() {
             />
           )}
 
+          {formData.destination_type === 'dittofeed' && (
+            <Input
+              label="API URL (Optional)"
+              placeholder="http://cdp-proxy:80"
+              value={formData.api_endpoint || ''}
+              onChange={(e) => setFormData({ ...formData, api_endpoint: e.target.value })}
+            />
+          )}
+
           <Input
             label="Batch Size"
             type="number"
             placeholder="75"
             value={formData.batch_size || ''}
             onChange={(e) => setFormData({ ...formData, batch_size: parseInt(e.target.value) })}
-            hint="Records per API request (max 75 for Braze, 100 for Attentive)"
+            hint={
+              formData.destination_type === 'braze'
+                ? 'Records per API request (max 75 for Braze)'
+                : formData.destination_type === 'dittofeed'
+                  ? 'Records per API request (max 200 for Journey Builder)'
+                  : 'Records per API request (max 100 for Attentive)'
+            }
           />
 
           <div className="flex justify-end gap-3 pt-4">

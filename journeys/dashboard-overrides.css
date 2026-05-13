@@ -11,6 +11,42 @@
  * user's perspective Dittofeed appears as a native page in cdp-main.
  * --------------------------------------------------------------------------- */
 
+@font-face {
+  font-family: "Proxima Nova";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Proxima-Nova-Regular.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Proxima Nova";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/Proxima-Nova-Semibold.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Proxima Nova";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Proxima-Nova-Bold.otf") format("opentype");
+}
+
+:root {
+  --cdp-primary: #000000;
+  --cdp-ink: #000000;
+  --cdp-graphite: #3b3b3b;
+  --cdp-stone: #666666;
+  --cdp-mercury: #e1e1e1;
+  --cdp-smoke: #f2f2f2;
+  --cdp-dawn: #f7f7f7;
+  --cdp-white: #ffffff;
+  --cdp-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
 /* ---- 1. Hide Dittofeed's entire sidebar so cdp-main's sidebar is the only
  * navigation surface the user sees. We hide the <nav> wrapper directly;
  * the per-item aria-label rules below are kept as a safety net in case
@@ -20,16 +56,250 @@ nav {
   display: none !important;
 }
 
+/* Dittofeed lite currently renders its sidebar as a temporary Material UI
+ * Drawer, not just the <nav> element above. Hide the drawer and its backdrop
+ * so the embedded journey canvas remains usable inside cdp-main's shell. */
+.MuiDrawer-root.MuiModal-root,
+.MuiDrawer-paper,
+.MuiBackdrop-root.MuiModal-backdrop {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Main content fills the space the sidebar used to occupy. Material UI's
  * default layout offsets <main> by the drawer width; reset it. */
 main.MuiBox-root {
   margin-left: 0 !important;
   padding-left: 24px !important;
+  padding-right: 24px !important;
   max-width: 100% !important;
   width: 100% !important;
 }
 
-/* ---- 2. Safety net: per-item hides if the <nav> rule above is overridden -- */
+body {
+  overflow: auto !important;
+}
+
+/* ---- 2. Theme alignment with cdp-main shell styles ---------------------- */
+html,
+body,
+#__next {
+  background: var(--cdp-white) !important;
+  color: var(--cdp-ink) !important;
+  font-family: "Proxima Nova", Arial, sans-serif !important;
+}
+
+.MuiTypography-root,
+.MuiButton-root,
+.MuiInputBase-root,
+.MuiTableCell-root,
+.MuiChip-root,
+.MuiMenuItem-root,
+.MuiListItemText-root {
+  font-family: "Proxima Nova", Arial, sans-serif !important;
+}
+
+.MuiTypography-root {
+  color: var(--cdp-ink) !important;
+}
+
+.MuiTypography-colorTextSecondary,
+.MuiFormHelperText-root,
+.MuiInputLabel-root {
+  color: var(--cdp-stone) !important;
+}
+
+/* The fixed top bar is also positioned as if the hidden drawer still exists.
+ * Keep the utility actions, but let the bar span the iframe. */
+.MuiAppBar-root {
+  left: 0 !important;
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: var(--cdp-white) !important;
+  border-bottom: 1px solid var(--cdp-mercury) !important;
+  box-shadow: none !important;
+  color: var(--cdp-ink) !important;
+}
+
+.MuiToolbar-root {
+  min-height: 60px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+.MuiPaper-root {
+  background: var(--cdp-white) !important;
+  color: var(--cdp-ink) !important;
+  box-shadow: none !important;
+}
+
+.MuiCard-root,
+.MuiTableContainer-root {
+  border: 1px solid var(--cdp-mercury) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+.MuiMenu-paper,
+.MuiPopover-paper,
+.MuiDialog-paper {
+  border: 1px solid var(--cdp-mercury) !important;
+  border-radius: 2px !important;
+  box-shadow: var(--cdp-shadow) !important;
+}
+
+.MuiButton-root {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  min-height: 40px !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+  text-transform: uppercase !important;
+}
+
+.MuiButton-contained,
+.MuiButton-containedPrimary {
+  background-color: var(--cdp-primary) !important;
+  border: 1px solid var(--cdp-primary) !important;
+  color: var(--cdp-white) !important;
+}
+
+.MuiButton-contained:hover,
+.MuiButton-containedPrimary:hover {
+  background-color: var(--cdp-graphite) !important;
+  border-color: var(--cdp-graphite) !important;
+}
+
+.MuiButton-outlined,
+.MuiButton-outlinedPrimary {
+  background-color: var(--cdp-white) !important;
+  border-color: var(--cdp-primary) !important;
+  color: var(--cdp-primary) !important;
+}
+
+.MuiButton-outlined:hover,
+.MuiButton-outlinedPrimary:hover,
+.MuiButton-text:hover,
+.MuiButton-textPrimary:hover {
+  background-color: var(--cdp-smoke) !important;
+}
+
+.MuiButton-text,
+.MuiButton-textPrimary,
+a.MuiTypography-colorPrimary,
+.MuiLink-root {
+  color: var(--cdp-primary) !important;
+}
+
+.MuiButton-root.Mui-disabled {
+  opacity: 0.45 !important;
+}
+
+.MuiIconButton-root {
+  background: var(--cdp-white) !important;
+  border: 1px solid var(--cdp-mercury) !important;
+  border-radius: 0 !important;
+  color: var(--cdp-ink) !important;
+  height: 36px !important;
+  width: 36px !important;
+}
+
+.MuiIconButton-root:hover {
+  background: var(--cdp-smoke) !important;
+}
+
+.MuiSvgIcon-root {
+  color: currentColor !important;
+}
+
+.MuiOutlinedInput-root,
+.MuiInputBase-root {
+  background: var(--cdp-white) !important;
+  border-radius: 0 !important;
+  color: var(--cdp-ink) !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--cdp-mercury) !important;
+}
+
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline,
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--cdp-primary) !important;
+  border-width: 1px !important;
+}
+
+.MuiInputLabel-root.Mui-focused {
+  color: var(--cdp-primary) !important;
+}
+
+.MuiTable-root {
+  border-collapse: collapse !important;
+}
+
+.MuiTableCell-root {
+  border-bottom: 1px solid var(--cdp-mercury) !important;
+  color: var(--cdp-graphite) !important;
+  font-size: 14px !important;
+  padding: 14px 16px !important;
+}
+
+.MuiTableCell-head {
+  background: var(--cdp-white) !important;
+  color: var(--cdp-ink) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.MuiTableRow-root:hover .MuiTableCell-root {
+  background: var(--cdp-dawn) !important;
+}
+
+.MuiChip-root {
+  border-radius: 2px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.MuiAvatar-root {
+  background: var(--cdp-smoke) !important;
+  color: var(--cdp-ink) !important;
+  font-weight: 600 !important;
+}
+
+.MuiDivider-root {
+  border-color: var(--cdp-mercury) !important;
+}
+
+.MuiMenuItem-root {
+  color: var(--cdp-ink) !important;
+  font-size: 14px !important;
+}
+
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-selected {
+  background: var(--cdp-smoke) !important;
+}
+
+.MuiPaginationItem-root {
+  border-radius: 0 !important;
+  color: var(--cdp-ink) !important;
+  font-family: "Proxima Nova", Arial, sans-serif !important;
+}
+
+.MuiPaginationItem-root.Mui-selected {
+  background: var(--cdp-primary) !important;
+  color: var(--cdp-white) !important;
+}
+
+/* ---- 3. Safety net: per-item hides if the <nav> rule above is overridden -- */
 span[aria-label="View, create, and edit segments."],           /* Segments → cdp-main owns */
 span[aria-label="View users, and their histories."],           /* Users → cdp-main /customers */
 span[aria-label="Manage the properties which are recorded and computed for users."],
@@ -47,21 +317,4 @@ span[aria-label*="Dittofeed"]                                  /* Docs/help link
 }
 h6.MuiTypography-h6.mui-style-q548kk {
   display: none !important;
-}
-
-/* ---- 3. Theme alignment with cdp-main brand colors ---------------------- */
-:root {
-  --cdp-primary: #ff3a5c;
-}
-
-/* Anchors and primary buttons inside Dittofeed pick up cdp-main's accent. */
-.MuiButton-containedPrimary,
-.MuiButton-outlinedPrimary {
-  background-color: var(--cdp-primary) !important;
-  border-color: var(--cdp-primary) !important;
-}
-.MuiButton-textPrimary,
-a.MuiTypography-colorPrimary,
-.MuiLink-root {
-  color: var(--cdp-primary) !important;
 }

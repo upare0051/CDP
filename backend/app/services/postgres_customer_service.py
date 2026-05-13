@@ -36,6 +36,16 @@ class PostgresCustomerService:
     - gold.order_line_fact (timeline derivation)
     """
 
+    def _empty_stats(self) -> CustomerStats:
+        return CustomerStats(
+            total_customers=0,
+            customers_added_today=0,
+            customers_added_this_week=0,
+            customers_synced_today=0,
+            avg_attributes_per_customer=0.0,
+            top_sources=[],
+        )
+
     @contextmanager
     def _connect(self):
         if not settings.warehouse_postgres_host or not settings.warehouse_postgres_user:
@@ -115,15 +125,25 @@ class PostgresCustomerService:
         """
         total_sql = f"SELECT COUNT(*) FROM gold.customer_unified_attr {where}"
 
-        with self._connect() as conn:
-            cur = conn.cursor()
-            if search:
-                cur.execute(total_sql, tuple(params))
-                total = int(cur.fetchone()[0] or 0)
-            else:
-                total = self._estimate_row_count("gold", "customer_unified_attr") or 0
-            cur.execute(rows_sql, tuple(params))
-            rows = cur.fetchall()
+        try:
+            with self._connect() as conn:
+                cur = conn.cursor()
+                if search:
+                    cur.execute(total_sql, tuple(params))
+                    total = int(cur.fetchone()[0] or 0)
+                else:
+                    total = self._estimate_row_count("gold", "customer_unified_attr") or 0
+                cur.execute(rows_sql, tuple(params))
+                rows = cur.fetchall()
+        except psycopg2.errors.UndefinedTable:
+            logger.warning("customer mart is missing; returning empty customer list")
+            return CustomerListResponse(
+                customers=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                total_pages=1,
+            )
 
         customers: List[CustomerProfileSummary] = []
         for r in rows:
@@ -158,12 +178,16 @@ class PostgresCustomerService:
         )
 
     def get_stats(self) -> CustomerStats:
-        total = self._estimate_row_count("gold", "customer_unified_attr")
-        if total is None:
-            with self._connect() as conn:
-                cur = conn.cursor()
-                cur.execute("SELECT COUNT(*) FROM gold.customer_unified_attr")
-                total = int(cur.fetchone()[0] or 0)
+        try:
+            total = self._estimate_row_count("gold", "customer_unified_attr")
+            if total is None:
+                with self._connect() as conn:
+                    cur = conn.cursor()
+                    cur.execute("SELECT COUNT(*) FROM gold.customer_unified_attr")
+                    total = int(cur.fetchone()[0] or 0)
+        except psycopg2.errors.UndefinedTable:
+            logger.warning("customer mart is missing; returning empty customer stats")
+            return self._empty_stats()
 
         return CustomerStats(
             total_customers=total,
@@ -181,13 +205,17 @@ class PostgresCustomerService:
             WHERE customer_id = %s
             LIMIT 1
         """
-        with self._connect() as conn:
-            cur = conn.cursor()
-            cur.execute(sql, (int(customer_id),))
-            row = cur.fetchone()
-            if not row:
-                return None
-            cols = [d[0] for d in cur.description]
+        try:
+            with self._connect() as conn:
+                cur = conn.cursor()
+                cur.execute(sql, (int(customer_id),))
+                row = cur.fetchone()
+                if not row:
+                    return None
+                cols = [d[0] for d in cur.description]
+        except psycopg2.errors.UndefinedTable:
+            logger.warning("customer mart is missing; returning no customer detail")
+            return None
 
         data = dict(zip(cols, row))
         now = datetime.now(timezone.utc)
@@ -258,10 +286,14 @@ class PostgresCustomerService:
             LIMIT %s
         """
 
-        with self._connect() as conn:
-            cur = conn.cursor()
-            cur.execute(sql, (int(customer_id), limit))
-            rows = cur.fetchall()
+        try:
+            with self._connect() as conn:
+                cur = conn.cursor()
+                cur.execute(sql, (int(customer_id), limit))
+                rows = cur.fetchall()
+        except psycopg2.errors.UndefinedTable:
+            logger.warning("order mart is missing; returning empty customer timeline")
+            return []
 
         now = datetime.now(timezone.utc)
         events: List[CustomerEventResponse] = []

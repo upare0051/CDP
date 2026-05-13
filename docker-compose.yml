@@ -185,6 +185,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
+      - DASHBOARD_PROXY_TARGET=http://cdp-proxy/
     depends_on:
       - backend
     volumes:

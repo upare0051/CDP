@@ -12,7 +12,7 @@ _(none yet)_
 
 ## Investigations
 
-_(none yet)_
+- [journey-builder-integration](investigations/journey-builder-integration.md) — Notes on the Dittofeed/Laudspeaker-compatible Journey Builder embed, native API proxy, workspace discovery, destination adapter exposure, shell-matched iframe styling, and `/dashboard` proxy routing.
 
 ## References
 

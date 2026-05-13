@@ -44,8 +44,12 @@ export default defineConfig({
       // docker compose, users normally access cdp-main through nginx at
       // http://localhost/ — this proxy is a fallback so /dashboard/*
       // works in `vite dev` mode too. WebSocket upgrade for Next.js HMR.
+      // In docker, `localhost` resolves to the frontend container itself,
+      // so the target is overridable via DASHBOARD_PROXY_TARGET (set to
+      // http://cdp-proxy/ in docker-compose so nginx's sub_filter branding
+      // overrides still apply).
       '^/dashboard/.+': {
-        target: 'http://localhost/',
+        target: process.env.DASHBOARD_PROXY_TARGET || 'http://localhost/',
         changeOrigin: true,
         ws: true,
       },

@@ -61,3 +61,9 @@ workflow is running. Out of scope for this change.
 - Live stack: `POST /api/v1/segments/{id}/activate` → segment appears in
   `GET /api/segments/?workspaceId=...` as `type=Manual`; `archive` removes
   it. Confirmed with the user's existing `Test Segment` (CDP id 1).
+
+## Open follow-ups
+
+Tracked at the wiki top level: see [`../todo.md`](../todo.md) — entry
+"Start the `compute-properties-queue-workflow` on the dittofeed-lite
+workspace."

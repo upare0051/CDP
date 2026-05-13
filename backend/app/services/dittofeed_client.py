@@ -12,7 +12,8 @@ Deliveries (read-only table) and grow from here.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Optional
+import time
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -167,3 +168,113 @@ def search_deliveries(
 def count_deliveries(**filters: Any) -> Dict[str, Any]:
     """Return `{count: int}` matching the same filters as search_deliveries."""
     return _request("GET", "/api/deliveries/count", params=filters)
+
+
+# ---------------------------------------------------------------------------
+# Segments — CDP-side segments are mirrored into Dittofeed as Manual segments
+# so they appear in the journey builder's "Wait For" dropdown. Membership is
+# pushed separately via `update_manual_segment_members`.
+# ---------------------------------------------------------------------------
+
+
+def upsert_manual_segment(
+    name: str,
+    *,
+    existing_id: Optional[str] = None,
+) -> str:
+    """Create or update a Manual segment in Dittofeed. Returns its UUID.
+
+    Dittofeed's `PUT /api/segments/` accepts an optional `id` to upsert.
+    The Manual entry node's `version` is a monotonic counter we bump on each
+    write so Dittofeed treats the definition as updated.
+    """
+    workspace_id = _workspace_id()
+    body: Dict[str, Any] = {
+        "workspaceId": workspace_id,
+        "name": name,
+        "definition": {
+            "entryNode": {
+                "type": "Manual",
+                "version": int(time.time() * 1000),
+                "id": "1",
+            },
+            "nodes": [],
+        },
+    }
+    if existing_id:
+        body["id"] = existing_id
+
+    url = f"{_base_url()}/api/segments/"
+    try:
+        with httpx.Client(timeout=30, headers=_headers()) as client:
+            resp = client.put(url, json=body)
+    except httpx.HTTPError as e:
+        raise DittofeedUnavailableError(str(e))
+
+    if not resp.is_success:
+        raise DittofeedError(
+            f"PUT /api/segments/ -> HTTP {resp.status_code}: {resp.text[:300]}"
+        )
+    data = resp.json()
+    segment_id = data.get("id")
+    if not segment_id:
+        raise DittofeedError(f"PUT /api/segments/ returned no id: {data}")
+    return segment_id
+
+
+def delete_segment(dittofeed_segment_id: str) -> None:
+    """Delete a segment in Dittofeed. No-op if it's already gone.
+
+    Note: Dittofeed's DELETE /api/segments/ takes a JSON *body* with
+    workspaceId and id (not query params).
+    """
+    workspace_id = _workspace_id()
+    url = f"{_base_url()}/api/segments/"
+    body = {"workspaceId": workspace_id, "id": dittofeed_segment_id}
+    try:
+        with httpx.Client(timeout=30, headers=_headers()) as client:
+            resp = client.request("DELETE", url, json=body)
+    except httpx.HTTPError as e:
+        raise DittofeedUnavailableError(str(e))
+
+    if resp.status_code == 404:
+        return
+    if not resp.is_success:
+        raise DittofeedError(
+            f"DELETE /api/segments/ -> HTTP {resp.status_code}: {resp.text[:300]}"
+        )
+
+
+def update_manual_segment_members(
+    dittofeed_segment_id: str,
+    user_ids: List[str],
+    *,
+    append: bool = True,
+) -> None:
+    """Push a manual-segment membership update.
+
+    `append=True` adds the listed users; `append=False` removes them. The
+    Dittofeed lite stack requires its compute-properties workflow to be
+    running on the workspace before this call can succeed — see
+    wiki/investigations/segment-dittofeed-mirror.md.
+    """
+    if not user_ids:
+        return
+    workspace_id = _workspace_id()
+    body = {
+        "workspaceId": workspace_id,
+        "segmentId": dittofeed_segment_id,
+        "userIds": user_ids,
+        "append": append,
+    }
+    url = f"{_base_url()}/api/segments/manual-segment/update"
+    try:
+        with httpx.Client(timeout=60, headers=_headers()) as client:
+            resp = client.post(url, json=body)
+    except httpx.HTTPError as e:
+        raise DittofeedUnavailableError(str(e))
+
+    if not resp.is_success:
+        raise DittofeedError(
+            f"POST /api/segments/manual-segment/update -> HTTP {resp.status_code}: {resp.text[:300]}"
+        )

@@ -60,6 +60,7 @@ class SegmentResponse(SegmentBase):
     created_at: datetime
     updated_at: datetime
     created_by: Optional[str] = None
+    dittofeed_segment_id: Optional[str] = None
 
     class Config:
         from_attributes = True

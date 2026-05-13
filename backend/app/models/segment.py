@@ -104,6 +104,11 @@ class Segment(Base):
     # Tags for organization
     tags = Column(JSON, default=[])
 
+    # UUID of the mirrored Manual segment in Dittofeed (if any). Populated on
+    # `activate_segment`; cleared on `archive_segment`. See
+    # wiki/investigations/segment-dittofeed-mirror.md.
+    dittofeed_segment_id = Column(String(64), nullable=True)
+
 
 class SegmentMembership(Base):
     """

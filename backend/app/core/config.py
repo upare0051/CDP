@@ -117,6 +117,19 @@ class Settings(BaseSettings):
     redshift_password: Optional[str] = None
     redshift_database: Optional[str] = None
 
+    # Segment materialization target. Defaults inherit REDSHIFT_* so local dev
+    # can point at the existing 127.0.0.1:10005 tunnel, while Docker can
+    # override host to host.docker.internal without changing C360 settings.
+    segment_redshift_host: Optional[str] = None
+    segment_redshift_port: Optional[int] = None
+    segment_redshift_user: Optional[str] = None
+    segment_redshift_password: Optional[str] = None
+    segment_redshift_database: Optional[str] = None
+    segment_redshift_schema: str = "gold"
+    segment_redshift_batch_size: int = Field(default=1000, ge=1, le=10000)
+    segment_redshift_timeout_seconds: int = Field(default=120, ge=1, le=600)
+    segment_cube_timeout_seconds: int = Field(default=180, ge=1, le=600)
+
     # Postgres warehouse (CDP demo / local).
     # Reads gold.* tables mirrored from Redshift via Meltano local-demo branch
     # OR seeded by cube/scripts/seed_warehouse_from_duckdb.py.

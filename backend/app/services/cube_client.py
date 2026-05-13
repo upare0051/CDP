@@ -50,7 +50,11 @@ def cube_meta() -> Dict[str, Any]:
         raise CubeUnavailableError(str(e))
 
 
-def cube_load(query: Dict[str, Any], max_wait_seconds: float = 60.0) -> Dict[str, Any]:
+def cube_load(
+    query: Dict[str, Any],
+    max_wait_seconds: float = 60.0,
+    request_timeout_seconds: float = 30.0,
+) -> Dict[str, Any]:
     """Execute a Cube query, polling through `Continue wait`.
 
     Returns the full Cube response dict (with `data`, `annotation`, etc.).
@@ -60,7 +64,7 @@ def cube_load(query: Dict[str, Any], max_wait_seconds: float = 60.0) -> Dict[str
     body = {"query": query}
     deadline = time.time() + max_wait_seconds
 
-    with httpx.Client(timeout=30.0) as client:
+    with httpx.Client(timeout=request_timeout_seconds) as client:
         while True:
             try:
                 resp = client.post(

@@ -14,6 +14,12 @@
 version: '3.8'
 
 services:
+  # Vite dev server (root compose) proxies /cubejs-api; inside Docker it must
+  # use the cube-api service (container port 4000), not localhost:4001.
+  frontend:
+    environment:
+      - VITE_DEV_PROXY_CUBE=http://cube-api:4000
+
   cubestore:
     # cubejs/cubestore:latest is amd64-only; use the arm64-native tag on
     # Apple Silicon. Swap to `cubejs/cubestore:latest` on x86 hosts.

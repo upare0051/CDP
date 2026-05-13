@@ -2,6 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
+// When the dev server runs inside Docker Compose, `localhost` is the container
+// itself — use service DNS names. On the host, defaults hit published ports.
+const devProxyApi =
+  process.env.VITE_DEV_PROXY_API || 'http://localhost:8000'
+const devProxyCube =
+  process.env.VITE_DEV_PROXY_CUBE || 'http://localhost:4001'
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -32,12 +39,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: devProxyApi,
         changeOrigin: true,
       },
-      // Cube REST API (demo: run Cube locally on :4000)
+      // Cube REST API — host dev: published port 4001; Docker: cube-api:4000
       '/cubejs-api': {
-        target: 'http://localhost:4001',
+        target: devProxyCube,
         changeOrigin: true,
       },
       // Dittofeed dashboard (Journeys). When running the full stack via

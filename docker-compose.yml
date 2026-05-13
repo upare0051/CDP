@@ -133,6 +133,21 @@ services:
       # so the workspace lookup stays server-side.
       - DITTOFEED_API_URL=http://journeys-lite:3000
       - DITTOFEED_WORKSPACE_ID=${DITTOFEED_WORKSPACE_ID:-}
+      # Redshift-dev segment materialization. When the backend runs in Docker,
+      # 127.0.0.1 is the container itself, so default to the host tunnel.
+      - REDSHIFT_HOST=${REDSHIFT_HOST:-host.docker.internal}
+      - REDSHIFT_PORT=${REDSHIFT_PORT:-10005}
+      - REDSHIFT_USER=${REDSHIFT_USER:-}
+      - REDSHIFT_PASSWORD=${REDSHIFT_PASSWORD:-}
+      - REDSHIFT_DATABASE=${REDSHIFT_DATABASE:-dev}
+      - SEGMENT_REDSHIFT_HOST=${SEGMENT_REDSHIFT_HOST:-host.docker.internal}
+      - SEGMENT_REDSHIFT_PORT=${SEGMENT_REDSHIFT_PORT:-10005}
+      - SEGMENT_REDSHIFT_USER=${SEGMENT_REDSHIFT_USER:-}
+      - SEGMENT_REDSHIFT_PASSWORD=${SEGMENT_REDSHIFT_PASSWORD:-}
+      - SEGMENT_REDSHIFT_DATABASE=${SEGMENT_REDSHIFT_DATABASE:-}
+      - SEGMENT_REDSHIFT_SCHEMA=${SEGMENT_REDSHIFT_SCHEMA:-gold}
+      - SEGMENT_REDSHIFT_TIMEOUT_SECONDS=${SEGMENT_REDSHIFT_TIMEOUT_SECONDS:-120}
+      - SEGMENT_CUBE_TIMEOUT_SECONDS=${SEGMENT_CUBE_TIMEOUT_SECONDS:-180}
     depends_on:
       postgres:
         condition: service_healthy
@@ -185,12 +200,16 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
+      - VITE_DEV_PROXY_API=http://backend:8000
       - DASHBOARD_PROXY_TARGET=http://cdp-proxy/
     depends_on:
       - backend
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
 
 volumes:
   postgres_data:

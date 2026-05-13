@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, inspect, text
 
 from ..models.activation import SegmentActivation, ActivationRun, SegmentExport, ActivationStatus
-from ..models.segment import Segment
+from ..models.segment import Segment, SegmentStatus
 from ..models.customer import CustomerProfile, CustomerAttribute
 from ..models.connection import DestinationConnection
 from ..schemas.activation import (
@@ -73,20 +73,37 @@ class ActivationService:
         segment_id: Optional[int] = None,
         destination_id: Optional[int] = None,
         status: Optional[str] = None,
+        *,
+        include_inactive_segments: bool = False,
     ) -> Tuple[List[SegmentActivation], int]:
-        """List activations with optional filtering."""
-        query = self.db.query(SegmentActivation)
-        
+        """List activations with optional filtering.
+
+        By default only includes activations whose segment is **active** (lifecycle),
+        so draft/archived segments do not appear on the global list.
+
+        When ``segment_id`` is set (e.g. deep link from the segment editor), lifecycle
+        filtering is skipped so that segment's activations are visible even if the
+        segment is still draft. Set ``include_inactive_segments`` to drop lifecycle
+        filtering for the global list (admin / debugging).
+        """
+        query = self.db.query(SegmentActivation).join(
+            Segment,
+            Segment.id == SegmentActivation.segment_id,
+        )
+        scope_all_segments = segment_id is None
+        if not include_inactive_segments and scope_all_segments:
+            query = query.filter(Segment.status == SegmentStatus.ACTIVE.value)
+
         if segment_id:
             query = query.filter(SegmentActivation.segment_id == segment_id)
         if destination_id:
             query = query.filter(SegmentActivation.destination_id == destination_id)
         if status:
             query = query.filter(SegmentActivation.status == status)
-        
+
         total = query.count()
         activations = query.order_by(SegmentActivation.updated_at.desc()).all()
-        
+
         return activations, total
 
     def update_activation(self, activation_id: int, data: ActivationUpdate) -> Optional[SegmentActivation]:
@@ -470,15 +487,34 @@ class DashboardService:
                 for r in recent_rows
             ]
         else:
-            total_activations = self.db.query(func.count(SegmentActivation.id)).scalar() or 0
-            active_activations = self.db.query(func.count(SegmentActivation.id)).filter(
-                SegmentActivation.status == "active"
-            ).scalar() or 0
-            syncs_today = self.db.query(func.count(ActivationRun.id)).filter(
-                ActivationRun.started_at >= today_start
-            ).scalar() or 0
+            # Align with list_activations: only activations tied to lifecycle-active segments.
+            seg_active = Segment.status == SegmentStatus.ACTIVE.value
+            total_activations = (
+                self.db.query(func.count(SegmentActivation.id))
+                .join(Segment, Segment.id == SegmentActivation.segment_id)
+                .filter(seg_active)
+                .scalar()
+                or 0
+            )
+            active_activations = (
+                self.db.query(func.count(SegmentActivation.id))
+                .join(Segment, Segment.id == SegmentActivation.segment_id)
+                .filter(seg_active, SegmentActivation.status == "active")
+                .scalar()
+                or 0
+            )
+            syncs_today = (
+                self.db.query(func.count(ActivationRun.id))
+                .join(SegmentActivation, ActivationRun.activation_id == SegmentActivation.id)
+                .join(Segment, Segment.id == SegmentActivation.segment_id)
+                .filter(seg_active, ActivationRun.started_at >= today_start)
+                .scalar()
+                or 0
+            )
             recent_activations = (
                 self.db.query(SegmentActivation)
+                .join(Segment, Segment.id == SegmentActivation.segment_id)
+                .filter(seg_active)
                 .order_by(SegmentActivation.last_sync_at.desc())
                 .limit(5)
                 .all()

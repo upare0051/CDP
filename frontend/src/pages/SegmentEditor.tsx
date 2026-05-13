@@ -15,6 +15,7 @@ import {
   Eye,
   Download,
   Zap,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +33,9 @@ import {
   SegmentCreate,
   SegmentUpdate,
   SegmentSourceType,
+  syncSegmentToRedshift,
+  getSegmentRedshiftSyncRuns,
+  type SegmentRedshiftSyncRun,
 } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
@@ -116,6 +120,29 @@ export default function SegmentEditor() {
     mutationFn: archiveSegment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['segment', id] });
+    },
+  });
+
+  const { data: redshiftRuns = [] } = useQuery<SegmentRedshiftSyncRun[]>({
+    queryKey: ['segment-redshift-sync-runs', id],
+    queryFn: () => getSegmentRedshiftSyncRuns(parseInt(id!), 5),
+    enabled: !isNew && !!id,
+  });
+
+  const redshiftSyncMutation = useMutation({
+    mutationFn: () => syncSegmentToRedshift(parseInt(id!)),
+    onSuccess: (run) => {
+      queryClient.invalidateQueries({ queryKey: ['segment-redshift-sync-runs', id] });
+      queryClient.invalidateQueries({ queryKey: ['segment', id] });
+      if (run.status === 'succeeded') {
+        toast.success(`Synced ${run.row_count.toLocaleString()} rows to Redshift-dev`);
+      } else {
+        toast.error(run.error_message || 'Redshift sync failed');
+      }
+    },
+    onError: (err: AxiosError<{ detail?: string }>) => {
+      const detail = err.response?.data?.detail || err.message || 'Redshift sync failed';
+      toast.error(detail);
     },
   });
 
@@ -289,7 +316,20 @@ export default function SegmentEditor() {
               onClick={() => navigate(`/activations?segment=${id}`)}
             >
               <Zap className="w-4 h-4" />
-              Activate
+              Send to Destination
+            </Button>
+          )}
+
+          {/* Warehouse materialization */}
+          {!isNew && segment && (
+            <Button
+              variant="secondary"
+              onClick={() => redshiftSyncMutation.mutate()}
+              loading={redshiftSyncMutation.isPending}
+              disabled={hasChanges}
+            >
+              <Database className="w-4 h-4" />
+              Publish to Redshift-dev
             </Button>
           )}
 
@@ -597,9 +637,52 @@ export default function SegmentEditor() {
               </CardContent>
             </Card>
           )}
+
+          {segment && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Redshift-dev Publications</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {redshiftRuns.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No Redshift publications yet.
+                  </p>
+                ) : (
+                  redshiftRuns.map((run) => (
+                    <div
+                      key={run.run_id}
+                      className="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-1"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                          {run.status}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {run.row_count.toLocaleString()} rows
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">
+                        {run.run_id}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {run.finished_at
+                          ? new Date(run.finished_at).toLocaleString()
+                          : new Date(run.started_at).toLocaleString()}
+                      </p>
+                      {run.error_message && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          {run.error_message}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

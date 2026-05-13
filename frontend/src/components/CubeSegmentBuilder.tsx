@@ -12,10 +12,16 @@
  * as-is.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Layers, Plus, X, Database } from 'lucide-react';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { BarChart3, Layers, Plus, X, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getCubeMeta, type CubeMetaCube, type CubeQuery, type CubeQueryFilter } from '@/lib/api';
+import {
+  getCubeMeta,
+  previewSegmentCube,
+  type CubeMetaCube,
+  type CubeQuery,
+  type CubeQueryFilter,
+} from '@/lib/api';
 
 type Props = {
   value: CubeQuery;
@@ -72,6 +78,19 @@ function memberType(cube: CubeMetaCube | null, memberName: string): string {
   return all.find((m) => m.name === memberName)?.type ?? 'string';
 }
 
+function formatCompact(n: number | null | undefined) {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '—';
+  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+}
+
+function filterNeedsValue(filter: CubeQueryFilter) {
+  return !['set', 'notSet'].includes(filter.operator);
+}
+
+function filterHasValue(filter: CubeQueryFilter) {
+  return !filterNeedsValue(filter) || (filter.values?.length ?? 0) > 0;
+}
+
 export default function CubeSegmentBuilder({ value, onChange }: Props) {
   const { data: meta, isLoading, error } = useQuery({
     queryKey: ['cube-meta'],
@@ -117,6 +136,29 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
 
   const selectedDims = value.dimensions ?? [];
   const filters = value.filters ?? [];
+
+  const funnelQueries = useQueries({
+    queries: filters.map((_, index) => {
+      const prefix = filters.slice(0, index + 1);
+      const complete = prefix.every(filterHasValue);
+      const query: CubeQuery = {
+        ...value,
+        filters: prefix,
+        // The backend computes count independently; keep payload row extraction tiny.
+        limit: 1,
+      };
+      return {
+        queryKey: ['cube-filter-funnel', selectedCube, JSON.stringify(query)],
+        queryFn: () => previewSegmentCube(query),
+        enabled: Boolean(meta) && complete && prefix.length > 0,
+        retry: 0,
+        staleTime: 30_000,
+      };
+    }),
+  });
+
+  const funnelCounts = funnelQueries.map((q) => q.data?.count ?? null);
+  const maxFunnelCount = Math.max(1, ...funnelCounts.filter((n): n is number => typeof n === 'number'));
 
   // -------------------------------------------------------------------------
   // Mutators
@@ -214,9 +256,16 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
       {/* Filters */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Filters
-          </label>
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Filters
+            </label>
+            {filters.length > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Funnel counts show remaining records after each condition.
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={addFilter}
@@ -231,63 +280,109 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
             No filters — all rows in the view will match.
           </p>
         )}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filters.map((f, i) => {
             const t = memberType(cube, f.member);
             const ops = operatorsFor(t);
             const op = ops.find((o) => o.value === f.operator) ?? ops[0];
             const valuesStr = (f.values ?? []).join(',');
             const noValueOps = ['set', 'notSet'];
+            const count = funnelCounts[i];
+            const queryState = funnelQueries[i];
+            const isComplete = filterHasValue(f);
+            const widthPct = count === null ? 100 : Math.max(12, Math.round((count / maxFunnelCount) * 100));
+            const clause = i === 0 ? 'WHERE' : 'AND';
             return (
               <div
                 key={i}
-                className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                className="grid grid-cols-[72px_minmax(0,1fr)_220px] items-stretch gap-3 animate-fade-in"
               >
-                <select
-                  value={f.member}
-                  onChange={(e) => updateFilter(i, { member: e.target.value })}
-                  className="flex-1 px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
-                >
-                  {availableDimensions.map((d) => (
-                    <option key={d.name} value={d.name}>
-                      {d.shortTitle || d.name.split('.').slice(-1)[0]}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={f.operator}
-                  onChange={(e) => updateFilter(i, { operator: e.target.value })}
-                  className="px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
-                >
-                  {ops.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                {!noValueOps.includes(f.operator) && (
-                  <input
-                    type="text"
-                    value={valuesStr}
-                    onChange={(e) => {
-                      const vals = e.target.value
-                        .split(',')
-                        .map((v) => v.trim())
-                        .filter(Boolean);
-                      updateFilter(i, { values: vals });
-                    }}
-                    placeholder={op?.multi ? 'value1, value2 …' : 'value'}
-                    className="flex-1 px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeFilter(i)}
-                  className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                  aria-label="Remove filter"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300">
+                    {clause}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 min-w-0">
+                  <select
+                    value={f.member}
+                    onChange={(e) => updateFilter(i, { member: e.target.value })}
+                    className="flex-1 min-w-[180px] px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                  >
+                    {availableDimensions.map((d) => (
+                      <option key={d.name} value={d.name}>
+                        {d.shortTitle || d.name.split('.').slice(-1)[0]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={f.operator}
+                    onChange={(e) => updateFilter(i, { operator: e.target.value })}
+                    className="px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                  >
+                    {ops.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  {!noValueOps.includes(f.operator) && (
+                    <input
+                      type="text"
+                      value={valuesStr}
+                      onChange={(e) => {
+                        const vals = e.target.value
+                          .split(',')
+                          .map((v) => v.trim())
+                          .filter(Boolean);
+                        updateFilter(i, { values: vals });
+                      }}
+                      placeholder={op?.multi ? 'value1, value2 …' : 'value'}
+                      className="flex-1 min-w-[160px] px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeFilter(i)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                    aria-label="Remove filter"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      Remaining
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {!isComplete
+                        ? '—'
+                        : queryState?.isLoading
+                          ? '...'
+                          : formatCompact(count)}
+                    </span>
+                  </div>
+                  <div className="h-8 border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex items-center px-1.5">
+                    <div
+                      className={cn(
+                        'h-4 bg-black dark:bg-white transition-all duration-300',
+                        queryState?.isError && 'bg-red-500 dark:bg-red-400',
+                        !isComplete && 'bg-gray-300 dark:bg-gray-700',
+                      )}
+                      style={{ width: `${!isComplete ? 100 : widthPct}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    {queryState?.isError
+                      ? 'Count unavailable'
+                      : i === 0
+                        ? 'After first condition'
+                        : `After ${i + 1} conditions`}
+                  </p>
+                </div>
               </div>
             );
           })}

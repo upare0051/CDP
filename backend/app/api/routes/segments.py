@@ -13,7 +13,9 @@ from ...schemas.segment import (
     FilterConfig,
     SegmentFieldInfo, SegmentOperatorInfo
 )
+from ...schemas.segment_refresh import SegmentRefreshRunResponse, SegmentRefreshRunListResponse
 from ...services.segment_service import SegmentService
+from ...services.segment_materialization_service import SegmentMaterializationService
 from ...core.logging import get_logger
 
 router = APIRouter(prefix="/segments", tags=["segments"])
@@ -167,6 +169,61 @@ def refresh_segment_count(
     service._update_segment_count(segment)
     
     return SegmentResponse.model_validate(segment)
+
+
+@router.post("/{segment_id}/sync-redshift", response_model=SegmentRefreshRunResponse)
+def sync_segment_to_redshift(
+    segment_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Materialize a segment into Redshift gold.segment_* tables.
+
+    This is the warehouse-first path: fixed schema, no field mapping, no
+    Braze/Attentive destination selection.
+    """
+    segment_service = SegmentService(db)
+    if not segment_service.get_segment(segment_id):
+        raise HTTPException(status_code=404, detail="Segment not found")
+
+    service = SegmentMaterializationService(db)
+    run = service.sync_segment_to_redshift(segment_id)
+    return SegmentRefreshRunResponse.model_validate(run)
+
+
+@router.get("/{segment_id}/sync-runs", response_model=SegmentRefreshRunListResponse)
+def list_segment_sync_runs(
+    segment_id: int,
+    limit: int = Query(default=10, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """
+    List recent Redshift materialization runs for a segment.
+    """
+    segment_service = SegmentService(db)
+    if not segment_service.get_segment(segment_id):
+        raise HTTPException(status_code=404, detail="Segment not found")
+
+    service = SegmentMaterializationService(db)
+    return SegmentRefreshRunListResponse(
+        items=[SegmentRefreshRunResponse.model_validate(r) for r in service.list_runs(segment_id, limit)]
+    )
+
+
+@router.get("/{segment_id}/sync-runs/{run_id}", response_model=SegmentRefreshRunResponse)
+def get_segment_sync_run(
+    segment_id: int,
+    run_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Get one Redshift materialization run for a segment.
+    """
+    service = SegmentMaterializationService(db)
+    run = service.get_run(segment_id, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Segment sync run not found")
+    return SegmentRefreshRunResponse.model_validate(run)
 
 
 @router.post("/{segment_id}/activate", response_model=SegmentResponse)

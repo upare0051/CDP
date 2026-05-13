@@ -46,16 +46,27 @@ def list_activations(
     segment_id: Optional[int] = Query(default=None),
     destination_id: Optional[int] = Query(default=None),
     status: Optional[str] = Query(default=None),
+    include_inactive_segments: bool = Query(
+        default=False,
+        description="If true, include activations whose segment is draft or archived.",
+    ),
     db: Session = Depends(get_db),
 ):
     """
-    List all activations with optional filtering.
+    List activations with optional filtering.
+
+    By default only returns activations whose segment lifecycle status is **active**,
+    so the global list matches segments that are actually activated for use.
+
+    If ``segment_id`` is set, returns activations for that segment regardless of
+    whether the segment is draft or archived (used with ``?segment=`` from the editor).
     """
     service = ActivationService(db)
     activations, total = service.list_activations(
         segment_id=segment_id,
         destination_id=destination_id,
         status=status,
+        include_inactive_segments=include_inactive_segments,
     )
     
     return ActivationListResponse(

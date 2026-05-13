@@ -397,6 +397,28 @@ export const getSegmentCustomers = (id: number, params: { page?: number; page_si
 export const createSegmentFromAI = (query: string, save = false) =>
   api.post<SegmentFromAIResponse>('/segments/from-ai', { query, save }).then(r => r.data);
 
+export interface SegmentRedshiftSyncRun {
+  id: number;
+  segment_id: number;
+  run_id: string;
+  target: string;
+  status: 'running' | 'succeeded' | 'failed';
+  trigger: string;
+  row_count: number;
+  error_message: string | null;
+  started_at: string;
+  finished_at: string | null;
+  created_at: string;
+}
+
+export const syncSegmentToRedshift = (id: number) =>
+  api.post<SegmentRedshiftSyncRun>(`/segments/${id}/sync-redshift`).then(r => r.data);
+
+export const getSegmentRedshiftSyncRuns = (id: number, limit = 10) =>
+  api
+    .get<{ items: SegmentRedshiftSyncRun[] }>(`/segments/${id}/sync-runs`, { params: { limit } })
+    .then(r => r.data.items);
+
 // ============================================================================
 // Activations API
 // ============================================================================
@@ -478,6 +500,8 @@ export const getActivations = (params: {
   segment_id?: number;
   destination_id?: number;
   status?: string;
+  /** If true, include activations for draft/archived segments (default: false). */
+  include_inactive_segments?: boolean;
 } = {}) =>
   api.get<{ items: Activation[]; total: number }>('/activations', { params }).then(r => r.data);
 

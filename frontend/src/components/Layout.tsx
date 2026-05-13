@@ -11,8 +11,6 @@ import {
   Users,
   Filter,
   Sparkles,
-  Bell,
-  Search,
   Table2,
   BookOpen,
   MessageSquareText,
@@ -25,7 +23,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ThemeToggleButton } from '@/components/ThemeToggle';
+import ThemeToggle from '@/components/ThemeToggle';
+import { AloMark } from '@/components/AloMark';
 
 interface LayoutProps {
   children: ReactNode;
@@ -82,11 +81,12 @@ const navItems: NavEntry[] = [
 // Shared row styling for both top-level leaves and group children.
 function rowClassName(isActive: boolean, indented = false) {
   return cn(
-    'flex items-center gap-3 px-3 py-3 transition-colors font-semibold uppercase tracking-[0.14em]',
-    indented ? 'pl-9 text-[10px]' : 'text-xs',
+    'flex items-center gap-3 border px-3 py-2.5 text-left transition-colors',
+    'text-sm font-medium text-gray-700 no-underline hover:bg-alo-smoke hover:text-black dark:text-neutral-300 dark:hover:bg-neutral-900 dark:hover:text-white',
+    indented ? 'pl-9 text-[13px]' : '',
     isActive
-      ? 'text-white border-b-2 border-white'
-      : 'text-white/55 hover:text-white border-b-2 border-transparent',
+      ? 'border-black bg-black text-white hover:bg-black hover:text-white dark:border-white dark:bg-white dark:text-black dark:hover:bg-white dark:hover:text-black'
+      : 'border-transparent',
   );
 }
 
@@ -114,20 +114,21 @@ export default function Layout({ children }: LayoutProps) {
     setOpenGroups((prev) => ({ ...prev, [basePath]: !prev[basePath] }));
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-black">
-      {/* Sidebar — dark "nav tier" (Sanctuary-style contrast) */}
-      <aside className="w-64 bg-black dark:bg-neutral-950 text-white border-r border-neutral-800 flex flex-col">
-        {/* Logo */}
-        <div className="h-16 px-6 flex items-center border-b border-neutral-800 bg-white dark:bg-black">
-          <Link to="/dashboard" className="flex items-center group">
-            <span className="font-semibold text-black dark:text-white text-xs tracking-[0.2em] uppercase">
+    <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+      <aside className="flex flex-col gap-8 border-b border-alo-mercury bg-white p-6 dark:border-neutral-800 dark:bg-black lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+        <Link to="/dashboard" className="flex items-center gap-3 no-underline">
+          <AloMark height={20} />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-tag text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500 dark:text-neutral-400">
+              Internal
+            </span>
+            <span className="text-base font-semibold text-black dark:text-white">
               ActivationOS
             </span>
-          </Link>
-        </div>
+          </span>
+        </Link>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+        <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-1 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:pb-0">
           {navItems.map((item) => {
             if (item.kind === 'group') {
               const isOpen =
@@ -148,13 +149,13 @@ export default function Layout({ children }: LayoutProps) {
                     <span className="flex-1">{item.label}</span>
                     <ChevronRight
                       className={cn(
-                        'w-4 h-4 opacity-60 transition-transform',
+                        'w-4 h-4 shrink-0 opacity-60 transition-transform',
                         isOpen && 'rotate-90',
                       )}
                     />
                   </button>
                   {isOpen && (
-                    <div id={`group-${item.basePath}`} className="space-y-0.5">
+                    <div id={`group-${item.basePath}`} className="mt-1 hidden space-y-1 lg:block">
                       {item.children.map((child) => {
                         const isChildActive = location.pathname.startsWith(child.path);
                         return (
@@ -186,65 +187,45 @@ export default function Layout({ children }: LayoutProps) {
           })}
         </nav>
 
-        {/* AI Feature Banner */}
-        <div className="p-3">
-          <div className="p-3 bg-neutral-900 border border-neutral-700 rounded-md">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-white" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-white">Ask C360</span>
-            </div>
-            <p className="text-[11px] text-white/60 leading-relaxed">
-              Governed NL→SQL on allowlisted marts
-            </p>
+        <div className="hidden border border-alo-mercury p-4 dark:border-neutral-800 lg:block">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-black dark:text-white" />
+            <span className="font-tag text-[11px] font-semibold uppercase tracking-[0.14em] text-black dark:text-white">
+              Ask C360
+            </span>
           </div>
+          <p className="text-xs leading-relaxed text-gray-500 dark:text-neutral-400">
+            Governed NL to SQL on allowlisted marts.
+          </p>
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-neutral-800">
-          <div className="flex items-center justify-between px-3 py-2 text-white/45 text-[10px] uppercase tracking-wider">
-            <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              <span>v1.0.0</span>
+        <div className="hidden border-t border-alo-mercury pt-6 dark:border-neutral-800 lg:block">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-black text-[11px] font-semibold tracking-[0.04em] text-white dark:bg-white dark:text-black">
+              U
             </div>
+            <div>
+              <div className="text-[13px] font-medium text-gray-700 dark:text-neutral-300">
+                data.ops
+              </div>
+              <div className="text-xs text-gray-500 dark:text-neutral-500">
+                CDP admin
+              </div>
+            </div>
+          </div>
+          <ThemeToggle showLabel />
+          <div className="mt-5 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-gray-500 dark:text-neutral-500">
+            <Settings className="h-4 w-4" />
+            <span>v1.0.0</span>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header — white tier */}
-        <header className="h-16 px-6 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-          {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md text-neutral-500 dark:text-neutral-400 w-64 bg-white dark:bg-black">
-            <Search className="w-4 h-4 text-black dark:text-white" />
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">Search...</span>
-            <kbd className="ml-auto text-[10px] uppercase tracking-wider bg-neutral-100 dark:bg-neutral-900 px-2 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 text-black dark:text-white">
-              /
-            </kbd>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            <ThemeToggleButton />
-            <button
-              type="button"
-              className="p-2 rounded-md text-neutral-600 hover:text-black hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900 transition-colors"
-            >
-              <Bell className="w-5 h-5" />
-            </button>
-            <div className="w-9 h-9 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-semibold text-xs ml-2 uppercase tracking-wider">
-              U
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto bg-white dark:bg-black">
-          <div className="p-6 max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-      </div>
+      <main className="min-w-0 bg-white dark:bg-black">
+        <div className="mx-auto max-w-[1440px] px-6 py-10 sm:px-8 lg:px-14 lg:py-16">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

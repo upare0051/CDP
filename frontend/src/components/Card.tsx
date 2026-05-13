@@ -12,9 +12,9 @@ export function Card({ children, className, hover, onClick }: CardProps) {
   return (
     <div
       className={cn(
-        'bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md',
+        'bg-white dark:bg-black border border-alo-mercury dark:border-neutral-800',
         hover &&
-          'transition-all duration-200 hover:border-neutral-400 dark:hover:border-neutral-600 hover:shadow-sm cursor-pointer',
+          'transition-colors duration-150 hover:border-black hover:bg-alo-smoke dark:hover:border-white dark:hover:bg-neutral-900 cursor-pointer',
         className
       )}
       onClick={onClick}
@@ -26,7 +26,7 @@ export function Card({ children, className, hover, onClick }: CardProps) {
 
 export function CardHeader({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('px-6 py-4 border-b border-neutral-200 dark:border-neutral-800', className)}>
+    <div className={cn('px-6 py-4 border-b border-alo-mercury dark:border-neutral-800', className)}>
       {children}
     </div>
   );
@@ -42,7 +42,7 @@ export function CardContent({ children, className }: { children: ReactNode; clas
 
 export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <h3 className={cn('text-base font-semibold uppercase tracking-wider text-black dark:text-white', className)}>
+    <h3 className={cn('font-tag text-xs font-semibold uppercase tracking-[0.14em] text-black dark:text-white', className)}>
       {children}
     </h3>
   );
@@ -50,7 +50,7 @@ export function CardTitle({ children, className }: { children: ReactNode; classN
 
 export function CardDescription({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p className={cn('text-sm text-neutral-600 dark:text-neutral-400', className)}>
+    <p className={cn('text-sm text-gray-500 dark:text-neutral-400', className)}>
       {children}
     </p>
   );

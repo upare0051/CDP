@@ -125,10 +125,11 @@ class Settings(BaseSettings):
     segment_redshift_user: Optional[str] = None
     segment_redshift_password: Optional[str] = None
     segment_redshift_database: Optional[str] = None
-    segment_redshift_schema: str = "gold"
+    segment_redshift_schema: str = "ext_braze"
     segment_redshift_batch_size: int = Field(default=1000, ge=1, le=10000)
     segment_redshift_timeout_seconds: int = Field(default=120, ge=1, le=600)
     segment_cube_timeout_seconds: int = Field(default=180, ge=1, le=600)
+    segment_preview_cache_ttl_seconds: int = Field(default=86400, ge=0, le=604800)
 
     # Postgres warehouse (CDP demo / local).
     # Reads gold.* tables mirrored from Redshift via Meltano local-demo branch

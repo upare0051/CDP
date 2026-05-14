@@ -136,6 +136,7 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
 
   const selectedDims = value.dimensions ?? [];
   const filters = value.filters ?? [];
+  const filterLogic = value.filter_logic ?? [];
 
   const funnelQueries = useQueries({
     queries: filters.map((_, index) => {
@@ -144,6 +145,7 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
       const query: CubeQuery = {
         ...value,
         filters: prefix,
+        filter_logic: filterLogic.slice(0, index),
         // The backend computes count independently; keep payload row extraction tiny.
         limit: 1,
       };
@@ -152,12 +154,21 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
         queryFn: () => previewSegmentCube(query),
         enabled: Boolean(meta) && complete && prefix.length > 0,
         retry: 0,
-        staleTime: 30_000,
+        staleTime: 24 * 60 * 60 * 1000,
+        gcTime: 24 * 60 * 60 * 1000,
       };
     }),
   });
 
-  const funnelCounts = funnelQueries.map((q) => q.data?.count ?? null);
+  const rawFunnelCounts = funnelQueries.map((q) => q.data?.count ?? null);
+  const funnelCounts = rawFunnelCounts.map((count, index) => {
+    if (typeof count !== 'number') return null;
+    const isAndOnlyPrefix = filterLogic.slice(0, index).every((logic) => logic !== 'OR');
+    if (!isAndOnlyPrefix) return count;
+    const previousCounts = rawFunnelCounts.slice(0, index).filter((n): n is number => typeof n === 'number');
+    const previous = previousCounts.length ? Math.min(...previousCounts) : count;
+    return Math.min(count, previous);
+  });
   const maxFunnelCount = Math.max(1, ...funnelCounts.filter((n): n is number => typeof n === 'number'));
 
   // -------------------------------------------------------------------------
@@ -170,6 +181,7 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
     onChange({
       dimensions: [],
       filters: [],
+      filter_logic: [],
       limit: value.limit ?? 1000,
     });
   };
@@ -184,12 +196,14 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
     if (!availableDimensions[0]) return;
     const first = availableDimensions[0];
     const ops = operatorsFor(first.type);
+    const nextFilters = [
+      ...filters,
+      { member: first.name, operator: ops[0].value, values: [] },
+    ];
     onChange({
       ...value,
-      filters: [
-        ...filters,
-        { member: first.name, operator: ops[0].value, values: [] },
-      ],
+      filters: nextFilters,
+      filter_logic: filters.length > 0 ? [...filterLogic, 'AND'] : filterLogic,
     });
   };
 
@@ -199,7 +213,20 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
   };
 
   const removeFilter = (index: number) => {
-    onChange({ ...value, filters: filters.filter((_, i) => i !== index) });
+    const nextLogic = index === 0
+      ? filterLogic.slice(1)
+      : filterLogic.filter((_, i) => i !== index - 1);
+    onChange({
+      ...value,
+      filters: filters.filter((_, i) => i !== index),
+      filter_logic: nextLogic.slice(0, Math.max(0, filters.length - 2)),
+    });
+  };
+
+  const updateFilterLogic = (index: number, logic: 'AND' | 'OR') => {
+    const nextLogic = [...filterLogic];
+    nextLogic[index - 1] = logic;
+    onChange({ ...value, filter_logic: nextLogic });
   };
 
   const setLimit = (n: number) => onChange({ ...value, limit: n });
@@ -290,24 +317,44 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
             const count = funnelCounts[i];
             const queryState = funnelQueries[i];
             const isComplete = filterHasValue(f);
+            const isCounting = isComplete && Boolean(queryState?.isLoading || queryState?.isFetching);
             const widthPct = count === null ? 100 : Math.max(12, Math.round((count / maxFunnelCount) * 100));
-            const clause = i === 0 ? 'WHERE' : 'AND';
+            const clause = i === 0 ? 'WHERE' : filterLogic[i - 1] ?? 'AND';
             return (
               <div
                 key={i}
                 className="grid grid-cols-[72px_minmax(0,1fr)_220px] items-stretch gap-3 animate-fade-in"
               >
                 <div className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300">
-                    {clause}
-                  </span>
+                  {i === 0 ? (
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300">
+                      {clause}
+                    </span>
+                  ) : (
+                    <select
+                      value={clause}
+                      onChange={(e) => updateFilterLogic(i, e.target.value as 'AND' | 'OR')}
+                      className="w-[58px] bg-transparent text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:text-gray-300 focus:outline-none"
+                      aria-label={`Condition ${i + 1} connector`}
+                    >
+                      <option value="AND">AND</option>
+                      <option value="OR">OR</option>
+                    </select>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 min-w-0">
+                <div
+                  className="grid items-center gap-2 overflow-hidden p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 min-w-0"
+                  style={{
+                    gridTemplateColumns: noValueOps.includes(f.operator)
+                      ? 'minmax(0, 1fr) minmax(96px, 0.55fr) 32px'
+                      : 'minmax(0, 1.05fr) minmax(96px, 0.55fr) minmax(90px, 0.9fr) 32px',
+                  }}
+                >
                   <select
                     value={f.member}
                     onChange={(e) => updateFilter(i, { member: e.target.value })}
-                    className="flex-1 min-w-[180px] px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                    className="w-full min-w-0 px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
                   >
                     {availableDimensions.map((d) => (
                       <option key={d.name} value={d.name}>
@@ -318,7 +365,7 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
                   <select
                     value={f.operator}
                     onChange={(e) => updateFilter(i, { operator: e.target.value })}
-                    className="px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                    className="w-full min-w-0 px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
                   >
                     {ops.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -338,13 +385,13 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
                         updateFilter(i, { values: vals });
                       }}
                       placeholder={op?.multi ? 'value1, value2 …' : 'value'}
-                      className="flex-1 min-w-[160px] px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+                      className="w-full min-w-0 px-2 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
                     />
                   )}
                   <button
                     type="button"
                     onClick={() => removeFilter(i)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400"
                     aria-label="Remove filter"
                   >
                     <X className="w-4 h-4" />
@@ -360,27 +407,34 @@ export default function CubeSegmentBuilder({ value, onChange }: Props) {
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">
                       {!isComplete
                         ? '—'
-                        : queryState?.isLoading
+                        : isCounting
                           ? '...'
                           : formatCompact(count)}
                     </span>
                   </div>
-                  <div className="h-8 border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex items-center px-1.5">
+                  <div className="h-8 flex items-center justify-center overflow-hidden">
                     <div
-                      className={cn(
-                        'h-4 bg-black dark:bg-white transition-all duration-300',
-                        queryState?.isError && 'bg-red-500 dark:bg-red-400',
-                        !isComplete && 'bg-gray-300 dark:bg-gray-700',
-                      )}
-                      style={{ width: `${!isComplete ? 100 : widthPct}%` }}
-                    />
+                      className="h-8 border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-1.5 transition-all duration-300"
+                      style={{ width: `${!isComplete ? 100 : isCounting ? 56 : widthPct}%` }}
+                    >
+                      <div
+                        className={cn(
+                          'h-4 w-full bg-black dark:bg-white transition-colors duration-300',
+                          isCounting && 'animate-pulse bg-neutral-500 dark:bg-neutral-400',
+                          queryState?.isError && 'bg-red-500 dark:bg-red-400',
+                          !isComplete && 'bg-gray-300 dark:bg-gray-700',
+                        )}
+                      />
+                    </div>
                   </div>
                   <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
                     {queryState?.isError
                       ? 'Count unavailable'
-                      : i === 0
-                        ? 'After first condition'
-                        : `After ${i + 1} conditions`}
+                      : isCounting
+                        ? 'Calculating...'
+                        : i === 0
+                          ? 'After first condition'
+                          : `After ${i + 1} conditions`}
                   </p>
                 </div>
               </div>

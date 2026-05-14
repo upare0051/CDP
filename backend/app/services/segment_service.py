@@ -1,6 +1,8 @@
 """
 Service for segment operations including query execution.
 """
+import hashlib
+import json
 import time
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
@@ -10,15 +12,19 @@ from sqlalchemy import and_, or_, func, cast, Float, String, text
 from ..models.segment import (
     Segment, SegmentMembership, SegmentStatus, SegmentSourceType, SEGMENT_FIELDS,
 )
+from ..models.segment_preview_cache import SegmentPreviewCache
 from ..models.customer import CustomerProfile, CustomerAttribute
 from ..schemas.segment import (
     SegmentCreate, SegmentUpdate, FilterConfig, FilterCondition,
     SegmentPreviewResponse
 )
+from ..core.config import get_settings
 from ..core.logging import get_logger
 from . import cube_client, dittofeed_client
+from .cache import get_cache
 
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 class SegmentService:
@@ -136,6 +142,16 @@ class SegmentService:
         start_time = time.time()
 
         if source_type == SegmentSourceType.CUBE.value:
+            cached_preview = self._get_cube_preview_cache(cube_query or {}, sample_size)
+            if cached_preview:
+                query_time_ms = (time.time() - start_time) * 1000
+                return SegmentPreviewResponse(
+                    count=int(cached_preview.get("count") or 0),
+                    sample_customers=cached_preview.get("sample_customers") or [],
+                    query_time_ms=round(query_time_ms, 2),
+                    source_type=source_type,
+                )
+
             sample_customers = self._preview_via_cube(cube_query or {}, sample_size)
             count = self._count_via_cube(cube_query or {})
         else:
@@ -148,6 +164,14 @@ class SegmentService:
                     sample_customers.append(self._customer_to_dict(customer))
 
         query_time_ms = (time.time() - start_time) * 1000
+        if source_type == SegmentSourceType.CUBE.value:
+            self._save_cube_preview_cache(
+                cube_query or {},
+                sample_size,
+                count,
+                sample_customers,
+                round(query_time_ms, 2),
+            )
 
         return SegmentPreviewResponse(
             count=count,
@@ -156,13 +180,140 @@ class SegmentService:
             source_type=source_type,
         )
 
+    def _get_cube_preview_cache(self, cube_query: Dict[str, Any], sample_size: int) -> Optional[Dict[str, Any]]:
+        """Return a cached Cube preview from Redis first, then app DB."""
+        if not cube_query:
+            return None
+
+        cache_key = self._cube_preview_cache_key(cube_query, sample_size)
+        redis_payload = self._get_cube_preview_redis_cache(cache_key)
+        if redis_payload:
+            return redis_payload
+
+        try:
+            entry = (
+                self.db.query(SegmentPreviewCache)
+                .filter(SegmentPreviewCache.query_hash == cache_key)
+                .first()
+            )
+        except Exception as e:
+            self.db.rollback()
+            logger.warning("failed to read cube preview cache", error=str(e))
+            return None
+        if not entry:
+            return None
+        if entry.expires_at and entry.expires_at <= datetime.utcnow():
+            return None
+
+        payload = {
+            "count": entry.count,
+            "sample_customers": entry.sample_customers or [],
+            "query_time_ms": entry.query_time_ms,
+            "source_type": entry.source_type,
+        }
+        self._set_cube_preview_redis_cache(cache_key, payload)
+        return payload
+
+    def _save_cube_preview_cache(
+        self,
+        cube_query: Dict[str, Any],
+        sample_size: int,
+        count: int,
+        sample_customers: List[Dict[str, Any]],
+        query_time_ms: float,
+    ) -> None:
+        """Persist a Cube preview result for reuse by funnel and live preview."""
+        if not cube_query:
+            return
+
+        ttl = settings.segment_preview_cache_ttl_seconds
+        expires_at = None if ttl == 0 else datetime.utcnow() + timedelta(seconds=ttl)
+        cache_key = self._cube_preview_cache_key(cube_query, sample_size)
+        payload = self._cube_preview_cache_payload(cube_query, sample_size)
+        result_payload = {
+            "count": int(count),
+            "sample_customers": sample_customers,
+            "query_time_ms": query_time_ms,
+            "source_type": SegmentSourceType.CUBE.value,
+        }
+
+        self._set_cube_preview_redis_cache(cache_key, result_payload)
+
+        try:
+            entry = (
+                self.db.query(SegmentPreviewCache)
+                .filter(SegmentPreviewCache.query_hash == cache_key)
+                .first()
+            )
+            if not entry:
+                entry = SegmentPreviewCache(
+                    query_hash=cache_key,
+                    source_type=SegmentSourceType.CUBE.value,
+                    query_payload=payload,
+                )
+                self.db.add(entry)
+
+            entry.count = int(count)
+            entry.sample_customers = sample_customers
+            entry.query_time_ms = query_time_ms
+            entry.expires_at = expires_at
+            entry.updated_at = datetime.utcnow()
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            logger.warning("failed to save cube preview cache", error=str(e))
+
+    def _get_cube_preview_redis_cache(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        redis_key = self._redis_cube_preview_key(cache_key)
+        try:
+            value = get_cache().get_json(redis_key)
+            if isinstance(value, dict):
+                return value
+        except Exception as e:
+            logger.debug("cube preview redis cache unavailable", error=str(e))
+        return None
+
+    def _set_cube_preview_redis_cache(self, cache_key: str, payload: Dict[str, Any]) -> None:
+        ttl = settings.segment_preview_cache_ttl_seconds
+        if ttl <= 0:
+            return
+        redis_key = self._redis_cube_preview_key(cache_key)
+        try:
+            get_cache().set_json(redis_key, payload, ttl=ttl)
+        except Exception as e:
+            logger.debug("failed to save cube preview redis cache", error=str(e))
+
+    @staticmethod
+    def _redis_cube_preview_key(cache_key: str) -> str:
+        return f"segment-preview:cube:{cache_key}"
+
+    @classmethod
+    def _cube_preview_cache_key(cls, cube_query: Dict[str, Any], sample_size: int) -> str:
+        payload = cls._cube_preview_cache_payload(cube_query, sample_size)
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    @staticmethod
+    def _cube_preview_cache_payload(cube_query: Dict[str, Any], sample_size: int) -> Dict[str, Any]:
+        normalized_query = dict(cube_query or {})
+        # Preview sampling overrides limit server-side, and count queries ignore it.
+        # Dropping it lets the same filter set reuse one cached count even when
+        # the row export limit changes.
+        normalized_query.pop("limit", None)
+        return {
+            "cache_version": 2,
+            "source_type": SegmentSourceType.CUBE.value,
+            "sample_size": sample_size,
+            "cube_query": normalized_query,
+        }
+
     def _preview_via_cube(self, cube_query: Dict[str, Any], sample_size: int) -> List[Dict[str, Any]]:
         """Run a Cube query (with limit overridden to sample_size) and return rows."""
         if not cube_query:
             return []
         # Override limit for the sample call; the underlying audience query
         # likely has a different limit set.
-        sample_q = {**cube_query, "limit": sample_size}
+        sample_q = {**self.normalize_cube_query(cube_query), "limit": sample_size}
         try:
             result = cube_client.cube_load(sample_q)
             return result.get("data", []) or []
@@ -183,14 +334,61 @@ class SegmentService:
         if not cube_query:
             return 0
         try:
-            count_q = self._derive_count_query(cube_query)
+            count_q = self._derive_count_query(self.normalize_cube_query(cube_query))
             if count_q is None:
                 # Fallback: just count returned rows (capped by Cube limit).
-                return cube_client.count_query(cube_query) or 0
+                return cube_client.count_query(self.normalize_cube_query(cube_query)) or 0
             return cube_client.count_query(count_q) or 0
         except (cube_client.CubeQueryError, cube_client.CubeUnavailableError) as e:
             logger.warning("cube count failed", error=str(e))
             return 0
+
+    @classmethod
+    def normalize_cube_query(cls, cube_query: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert UI filter connectors into Cube REST logical operators."""
+        query = dict(cube_query or {})
+        filters = list(query.get("filters") or [])
+        logic = list(query.pop("filter_logic", []) or [])
+        if len(filters) <= 1:
+            query["filters"] = filters
+            return query
+
+        if not any(str(item).upper() == "OR" for item in logic):
+            query["filters"] = filters
+            return query
+
+        expression: Dict[str, Any] = filters[0]
+        for index, current_filter in enumerate(filters[1:], start=1):
+            connector = str(logic[index - 1] if index - 1 < len(logic) else "AND").lower()
+            expression = {connector if connector == "or" else "and": [expression, current_filter]}
+
+        query["filters"] = [expression]
+        return query
+
+    @classmethod
+    def first_cube_member(cls, cube_query: Dict[str, Any]) -> Optional[str]:
+        """Find the first member referenced by dimensions or nested filters."""
+        dimensions = cube_query.get("dimensions") or []
+        if dimensions:
+            return str(dimensions[0])
+        return cls._first_filter_member(cube_query.get("filters") or [])
+
+    @classmethod
+    def _first_filter_member(cls, filters: Any) -> Optional[str]:
+        if isinstance(filters, list):
+            for item in filters:
+                found = cls._first_filter_member(item)
+                if found:
+                    return found
+        elif isinstance(filters, dict):
+            member = filters.get("member")
+            if member:
+                return str(member)
+            for key in ("and", "or"):
+                found = cls._first_filter_member(filters.get(key))
+                if found:
+                    return found
+        return None
 
     @staticmethod
     def _derive_count_query(cube_query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -209,14 +407,9 @@ class SegmentService:
 
         # Determine the cube/view name from a dimension or filter.
         source = None
-        if dims:
-            source = dims[0].split(".", 1)[0]
-        else:
-            for f in cube_query.get("filters") or []:
-                member = f.get("member") or ""
-                if "." in member:
-                    source = member.split(".", 1)[0]
-                    break
+        member = SegmentService.first_cube_member(cube_query)
+        if member and "." in member:
+            source = member.split(".", 1)[0]
         if not source:
             return None
 

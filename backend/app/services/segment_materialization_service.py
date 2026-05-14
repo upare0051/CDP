@@ -1,4 +1,4 @@
-"""Materialize app segments into Redshift gold tables."""
+"""Materialize app segments into Redshift publication tables."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 import re
 import uuid
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
 from sqlalchemy.orm import Session
@@ -149,27 +149,30 @@ class SegmentMaterializationService:
         return [svc._customer_to_dict(customer) for customer in query.all()]
 
     def _cube_materialization_query(self, cube_query: Dict[str, Any]) -> Dict[str, Any]:
-        """Ensure Cube row extraction includes a customer key for Redshift cust_id."""
+        """Ensure Cube row extraction includes Braze-compatible identity fields."""
         if not cube_query:
             raise ValueError("Cube segment has no query definition")
 
-        query = dict(cube_query)
+        query = SegmentService.normalize_cube_query(cube_query)
         dimensions = list(query.get("dimensions") or [])
-        filters = list(query.get("filters") or [])
 
-        has_customer_key = any(d.split(".")[-1] in {"customer_id", "cust_id", "id"} for d in dimensions)
-        if not has_customer_key:
-            source = None
-            if dimensions and "." in dimensions[0]:
-                source = dimensions[0].split(".", 1)[0]
-            else:
-                for item in filters:
-                    member = str(item.get("member") or "")
-                    if "." in member:
-                        source = member.split(".", 1)[0]
-                        break
-            source = source or "customer_unified"
-            dimensions.insert(0, f"{source}.customer_id")
+        source = None
+        if dimensions and "." in dimensions[0]:
+            source = dimensions[0].split(".", 1)[0]
+        else:
+            member = SegmentService.first_cube_member(query)
+            if member and "." in member:
+                source = member.split(".", 1)[0]
+        source = source or "customer_unified"
+
+        identity_fields = ("customer_id",)
+        if source in {"customer_360", "customer_marketing", "customer_unified", "customer_unified_attr", "customer_identifier_dim"}:
+            identity_fields = ("phone", "email", "customer_id")
+
+        for identity_field in identity_fields:
+            member = f"{source}.{identity_field}"
+            if not any(d == member or d.split(".")[-1] == identity_field for d in dimensions):
+                dimensions.insert(0, member)
 
         query["dimensions"] = dimensions
         return query
@@ -179,14 +182,15 @@ class SegmentMaterializationService:
     # ------------------------------------------------------------------
     def _write_redshift(self, segment: Segment, run_id: str, rows: List[Dict[str, Any]]) -> int:
         schema = _validate_ident(settings.segment_redshift_schema)
-        refreshed_at = datetime.utcnow()
+        refreshed_at = datetime.now(timezone.utc)
 
         with self._connect_redshift() as conn:
             cur = conn.cursor()
             try:
                 self._ensure_redshift_tables(cur, schema)
                 segment_data_columns = self._table_columns(cur, schema, "segment_data")
-                json_type = self._json_payload_type(cur, schema)
+                segment_data_types = self._table_column_types(cur, schema, "segment_data")
+                self._validate_braze_segment_data_types(schema, segment_data_types)
 
                 cur.execute(
                     f"DELETE FROM {schema}.segment_metadata WHERE segment_id = %s",
@@ -208,18 +212,32 @@ class SegmentMaterializationService:
                     ),
                 )
 
-                insert_sql = self._segment_data_insert_sql(schema, json_type, segment_data_columns)
+                insert_columns, insert_sql = self._segment_data_insert_sql(
+                    schema,
+                    segment_data_columns,
+                    segment_data_types,
+                )
                 batch: List[tuple[Any, ...]] = []
                 row_count = 0
                 for row in rows:
                     cust_id = self._extract_customer_id(row)
+                    external_id = self._extract_external_id(row, cust_id)
+                    email = self._extract_optional_str(row, ("email", "email_norm"))
+                    phone = self._extract_optional_str(row, ("phone", "phone_norm"))
                     payload = json.dumps(row, default=str)
-                    values: List[Any] = [int(segment.id), cust_id, payload]
-                    if "run_id" in segment_data_columns:
-                        values.append(run_id)
-                    if "refreshed_at" in segment_data_columns:
-                        values.append(refreshed_at)
-                    batch.append(tuple(values))
+                    value_by_column: Dict[str, Any] = {
+                        "seg_id": int(segment.id),
+                        "cust_id": cust_id,
+                        "external_id": external_id,
+                        "email": email,
+                        "phone": phone,
+                        "payload": payload,
+                        "json_payload": payload,
+                        "run_id": run_id,
+                        "updated_at": refreshed_at,
+                        "refreshed_at": refreshed_at,
+                    }
+                    batch.append(tuple(value_by_column[column] for column in insert_columns))
                     if len(batch) >= settings.segment_redshift_batch_size:
                         cur.executemany(insert_sql, batch)
                         row_count += len(batch)
@@ -289,18 +307,26 @@ class SegmentMaterializationService:
         cur.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {schema}.segment_data (
-                seg_id          BIGINT       NOT NULL,
-                cust_id         BIGINT       NOT NULL,
-                json_payload    SUPER,
-                run_id          VARCHAR(64)  NOT NULL,
-                refreshed_at    TIMESTAMP    NOT NULL DEFAULT GETDATE(),
-                PRIMARY KEY (seg_id, cust_id, run_id)
+                seg_id          BIGINT        NOT NULL,
+                external_id     VARCHAR(256)  NOT NULL,
+                email           VARCHAR(512),
+                phone           VARCHAR(64),
+                payload         VARCHAR(65535),
+                updated_at      TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                run_id          VARCHAR(64)   NOT NULL,
+                cust_id         BIGINT,
+                PRIMARY KEY (seg_id, external_id, run_id)
             )
             DISTSTYLE KEY
-            DISTKEY (cust_id)
-            COMPOUND SORTKEY (cust_id, seg_id, run_id)
+            DISTKEY (external_id)
+            COMPOUND SORTKEY (seg_id, run_id, updated_at)
             """
         )
+        self._ensure_column(cur, schema, "segment_data", "external_id", "VARCHAR(256)")
+        self._ensure_column(cur, schema, "segment_data", "email", "VARCHAR(512)")
+        self._ensure_column(cur, schema, "segment_data", "phone", "VARCHAR(64)")
+        self._ensure_column(cur, schema, "segment_data", "payload", "VARCHAR(65535)")
+        self._ensure_column(cur, schema, "segment_data", "updated_at", "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP")
         cur.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {schema}.segment_latest_run (
@@ -314,19 +340,45 @@ class SegmentMaterializationService:
             """
         )
 
-    def _json_payload_type(self, cur, schema: str) -> str:
+    def _ensure_column(self, cur, schema: str, table: str, column: str, ddl: str) -> None:
         cur.execute(
             """
-            SELECT data_type
+            SELECT 1
             FROM information_schema.columns
             WHERE table_schema = %s
-              AND table_name = 'segment_data'
-              AND column_name = 'json_payload'
+              AND table_name = %s
+              AND column_name = %s
             """,
-            (schema,),
+            (schema, table, column),
         )
-        row = cur.fetchone()
-        return str(row[0]).lower() if row else "super"
+        if not cur.fetchone():
+            cur.execute(f"ALTER TABLE {schema}.{table} ADD COLUMN {column} {ddl}")
+
+    def _table_column_types(self, cur, schema: str, table: str) -> Dict[str, str]:
+        cur.execute(
+            """
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_schema = %s
+              AND table_name = %s
+            """,
+            (schema, table),
+        )
+        return {str(row[0]).lower(): str(row[1]).lower() for row in cur.fetchall()}
+
+    def _validate_braze_segment_data_types(self, schema: str, column_types: Dict[str, str]) -> None:
+        payload_type = column_types.get("payload", "")
+        updated_at_type = column_types.get("updated_at", "")
+        if "char" not in payload_type and "text" not in payload_type:
+            raise RuntimeError(
+                f"{schema}.segment_data.payload must be VARCHAR for Braze, found {payload_type or 'missing'}. "
+                f"Recreate {schema}.segment_data with the latest ext_braze DDL, then rerun the sync."
+            )
+        if "with time zone" not in updated_at_type and "timestamptz" not in updated_at_type:
+            raise RuntimeError(
+                f"{schema}.segment_data.updated_at must be TIMESTAMPTZ for Braze, found {updated_at_type or 'missing'}. "
+                f"Recreate {schema}.segment_data with the latest ext_braze DDL, then rerun the sync."
+            )
 
     def _table_columns(self, cur, schema: str, table: str) -> set[str]:
         cur.execute(
@@ -340,19 +392,32 @@ class SegmentMaterializationService:
         )
         return {str(row[0]).lower() for row in cur.fetchall()}
 
-    def _segment_data_insert_sql(self, schema: str, json_type: str, columns: set[str]) -> str:
-        payload_expr = "JSON_PARSE(%s)" if "super" in json_type else "%s"
-        insert_columns = ["seg_id", "cust_id", "json_payload"]
-        value_exprs = ["%s", "%s", payload_expr]
+    def _segment_data_insert_sql(
+        self,
+        schema: str,
+        columns: set[str],
+        column_types: Dict[str, str],
+    ) -> tuple[List[str], str]:
+        preferred_columns = [
+            "seg_id",
+            "external_id",
+            "email",
+            "phone",
+            "payload",
+            "updated_at",
+            "run_id",
+            "cust_id",
+            "json_payload",
+            "refreshed_at",
+        ]
+        insert_columns = [column for column in preferred_columns if column in columns]
+        value_exprs = []
+        for column in insert_columns:
+            is_json_column = column in {"payload", "json_payload"}
+            is_super = "super" in column_types.get(column, "")
+            value_exprs.append("JSON_PARSE(%s)" if is_json_column and is_super else "%s")
 
-        if "run_id" in columns:
-            insert_columns.append("run_id")
-            value_exprs.append("%s")
-        if "refreshed_at" in columns:
-            insert_columns.append("refreshed_at")
-            value_exprs.append("%s")
-
-        return f"""
+        return insert_columns, f"""
             INSERT INTO {schema}.segment_data
                 ({", ".join(insert_columns)})
             VALUES ({", ".join(value_exprs)})
@@ -396,6 +461,17 @@ class SegmentMaterializationService:
                 segment_id=segment.id,
                 error=str(e),
             )
+
+    def _extract_external_id(self, row: Dict[str, Any], fallback_customer_id: int) -> str:
+        value = self._extract_optional_str(row, ("external_id", "customer_id", "cust_id", "id"))
+        return value or str(fallback_customer_id)
+
+    def _extract_optional_str(self, row: Dict[str, Any], keys: Iterable[str]) -> Optional[str]:
+        for key in keys:
+            value = row.get(key)
+            if value is not None and value != "":
+                return str(value)
+        return None
 
     def _extract_customer_id(self, row: Dict[str, Any]) -> int:
         for key in ("cust_id", "customer_id", "id"):

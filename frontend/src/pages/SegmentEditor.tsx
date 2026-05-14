@@ -54,7 +54,7 @@ export default function SegmentEditor() {
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [sourceType, setSourceType] = useState<SegmentSourceType>('legacy');
+  const [sourceType, setSourceType] = useState<SegmentSourceType>('cube');
   const [filterConfig, setFilterConfig] = useState<FilterConfig>({ filters: [], logic: 'AND' });
   const [cubeQuery, setCubeQuery] = useState<CubeQuery>({ dimensions: [], filters: [], limit: 1000 });
   const [aiPrompt, setAiPrompt] = useState('');
@@ -79,7 +79,7 @@ export default function SegmentEditor() {
     if (segment) {
       setName(segment.name);
       setDescription(segment.description || '');
-      setSourceType(segment.source_type || 'legacy');
+      setSourceType('cube');
       setFilterConfig(segment.filter_config);
       if (segment.cube_query) {
         setCubeQuery(segment.cube_query);
@@ -234,15 +234,6 @@ export default function SegmentEditor() {
   const handleCubeQueryChange = (q: CubeQuery) => {
     setCubeQuery(q);
     setHasChanges(true);
-  };
-
-  const handleSourceTypeChange = (next: SegmentSourceType) => {
-    setSourceType(next);
-    setHasChanges(true);
-    // Reset preview when switching modes; new mode's effect will refetch.
-    setPreviewCount(null);
-    setPreviewSamples([]);
-    setPreviewTime(null);
   };
 
   // Save handler — sends the field set appropriate to the active source type.
@@ -453,40 +444,7 @@ export default function SegmentEditor() {
           {/* Filter Builder (legacy or Cube) */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Audience Definition</CardTitle>
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => handleSourceTypeChange('legacy')}
-                    className={cn(
-                      'px-3 py-1 text-xs font-medium rounded transition-colors',
-                      sourceType === 'legacy'
-                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
-                    )}
-                  >
-                    App profiles
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSourceTypeChange('cube')}
-                    className={cn(
-                      'px-3 py-1 text-xs font-medium rounded transition-colors',
-                      sourceType === 'cube'
-                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
-                    )}
-                  >
-                    Cube (warehouse)
-                  </button>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {sourceType === 'cube'
-                  ? 'Build audience against the Cube semantic layer (warehouse-backed, governed).'
-                  : 'Filter app-managed customer profiles.'}
-              </p>
+              <CardTitle>Audience Definition</CardTitle>
             </CardHeader>
             <CardContent>
               {sourceType === 'cube' ? (

@@ -481,7 +481,9 @@ class SyncEngine:
         - legacy: pages through CustomerProfile (limit/offset).
         """
         if segment.source_type == SegmentSourceType.CUBE.value:
-            cube_query = segment.cube_query or {}
+            from .segment_service import SegmentService  # local import to avoid cycle
+
+            cube_query = SegmentService.normalize_cube_query(segment.cube_query or {})
             try:
                 result = cube_client.cube_load(cube_query)
             except (cube_client.CubeQueryError, cube_client.CubeUnavailableError) as e:

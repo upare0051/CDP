@@ -177,7 +177,7 @@ def sync_segment_to_redshift(
     db: Session = Depends(get_db),
 ):
     """
-    Materialize a segment into Redshift gold.segment_* tables.
+    Materialize a segment into Redshift segment publication tables.
 
     This is the warehouse-first path: fixed schema, no field mapping, no
     Braze/Attentive destination selection.

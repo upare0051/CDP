@@ -42,7 +42,7 @@ This doc matches how **cdp-main** is used today and the **two downstream pattern
 ### Pattern A — **Materialize in Redshift; CRM reads tables** (not Braze API)
 
 - **Who owns Braze/CRM:** External CRM team; **not** necessarily wired through cdp-main APIs.
-- **CDP / Reverse ETL role:** Run jobs that **write or refresh tables/views in Redshift** (e.g. `gold.segment_*`, export marts, audience tables) that **CRM consumes with their own Redshift access**.
+- **CDP / Reverse ETL role:** Run jobs that **write or refresh tables/views in Redshift** (e.g. `ext_braze.segment_*`, export marts, audience tables) that **CRM consumes with their own Redshift access**.
 - **Scheduling / on-demand:** **Airflow** (or equivalent) runs **dbt**, **SQL COPY/INSERT**, or **Meltano** target-sink jobs on a schedule; same jobs can be **triggered manually** (Airflow UI “Trigger DAG”, CI, or a thin **cdp-main** endpoint that only enqueues Airflow if you add it later).
 - **Today in repo:** Table **materialization to Redshift** is not the same code path as **segment → Braze REST** in `SyncEngine`; treat Pattern A as **orchestration + warehouse writes** (dbt under `platform/dbt`, Meltano, or custom SQL) **alongside** cdp-main for definitions and ops UX.
 

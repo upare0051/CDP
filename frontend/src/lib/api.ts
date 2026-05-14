@@ -171,6 +171,7 @@ export interface CubeQuery {
   measures?: string[];
   dimensions?: string[];
   filters?: CubeQueryFilter[];
+  filter_logic?: ('AND' | 'OR')[];
   order?: Record<string, 'asc' | 'desc'>;
   limit?: number;
   segments?: string[];

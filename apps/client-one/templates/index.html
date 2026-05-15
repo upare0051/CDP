@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CLIENT ONE v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #FAFAFA; --white: #FFFFFF; --surface: #FFFFFF; --surface-2: #F5F5F7; --surface-3: #EFEFEF;
+    --border: rgba(0,0,0,0.06); --border-med: rgba(0,0,0,0.1);
+    --text: #1D1D1F; --text-sec: #6E6E73; --text-muted: #AEAEB2;
+    --accent: #1D1D1F; --purple: #6C5CE7; --purple-light: #F0EDFF;
+    --green: #34C759; --green-light: #E8FAF0; --gold: #C7952D; --gold-light: #FFF8EC;
+    --red: #FF3B30; --red-light: #FFF0EF; --blue: #007AFF; --blue-light: #EEF4FF; --pink: #AF52DE;
+    --radius: 20px; --radius-sm: 14px; --radius-xs: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow: 0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+
+  .screen { display:none; min-height:100vh; flex-direction:column; animation:fadeIn 0.35s ease; }
+  .screen.active { display:flex; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scan { 0%{top:8%} 100%{top:88%} }
+  @keyframes ripple { 0%{transform:scale(0.9);opacity:0.5} 100%{transform:scale(2.2);opacity:0} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(108,92,231,0.15)} 50%{box-shadow:0 0 0 12px rgba(108,92,231,0.05)} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* ─── HEADER ─── */
+  .header { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background:var(--white); border-bottom:1px solid var(--border); }
+  .header-brand { display:flex; align-items:center; gap:10px; }
+  .header-logo { width:32px; height:32px; border-radius:8px; background:var(--text); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:11px; color:white; letter-spacing:-0.5px; }
+  .header-title { font-size:16px; font-weight:700; letter-spacing:-0.3px; }
+  .header-v { font-size:10px; color:var(--text-muted); font-weight:500; background:var(--surface-2); padding:2px 6px; border-radius:4px; margin-left:4px; }
+  .header-store { font-size:12px; color:var(--text-sec); font-weight:500; }
+  .header-sub { font-size:11px; color:var(--text-muted); font-weight:500; text-align:center; margin-top:1px; }
+  .sync-badge { font-size:9px; font-weight:700; color:var(--green); background:rgba(52,199,89,0.1); padding:3px 8px; border-radius:6px; letter-spacing:0.3px; }
+
+  /* ─── SCAN ─── */
+  .scan-hero { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+  .scan-zone { width:280px; height:280px; border-radius:32px; background:var(--white); border:2px solid var(--border-med); position:relative; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.3s; overflow:hidden; box-shadow:var(--shadow); }
+  .scan-zone:hover { border-color:var(--text); box-shadow:var(--shadow-lg); transform:scale(1.01); }
+  .scan-zone:active { transform:scale(0.98); }
+  .scan-corners { position:absolute; inset:16px; pointer-events:none; }
+  .scan-corners::before,.scan-corners::after { content:''; position:absolute; width:32px; height:32px; border-color:var(--text); border-style:solid; border-width:0; }
+  .scan-corners::before { top:0;left:0;border-top-width:2.5px;border-left-width:2.5px;border-radius:8px 0 0 0; }
+  .scan-corners::after { top:0;right:0;border-top-width:2.5px;border-right-width:2.5px;border-radius:0 8px 0 0; }
+  .scan-bl,.scan-br { position:absolute; inset:16px; pointer-events:none; }
+  .scan-bl::before,.scan-br::before { content:''; position:absolute; width:32px; height:32px; border-color:var(--text); border-style:solid; border-width:0; }
+  .scan-bl::before { bottom:0;left:0;border-bottom-width:2.5px;border-left-width:2.5px;border-radius:0 0 0 8px; }
+  .scan-br::before { bottom:0;right:0;border-bottom-width:2.5px;border-right-width:2.5px;border-radius:0 0 8px 0; }
+  .scan-line { position:absolute;left:24px;right:24px;height:2px;background:linear-gradient(90deg,transparent,var(--text),transparent);top:8%;display:none;animation:scan 2s ease-in-out infinite alternate;opacity:0.3; }
+  .scan-icon { display:flex; flex-direction:column; align-items:center; gap:14px; z-index:1; }
+  .scan-icon svg { width:48px; height:48px; opacity:0.25; }
+  .scan-label { font-size:14px; color:var(--text-muted); font-weight:500; }
+  .scan-actions { display:flex; gap:10px; margin-top:28px; }
+  .scan-btn { padding:12px 24px; border-radius:12px; border:1px solid var(--border-med); background:var(--white); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:7px; transition:all 0.2s; box-shadow:var(--shadow-sm); font-family:inherit; }
+  .scan-btn:hover { background:var(--surface-2); box-shadow:var(--shadow); }
+  .scan-btn svg { width:16px; height:16px; color:var(--text-sec); }
+  .scan-stats { display:flex; gap:10px; margin-top:32px; }
+  .scan-stat { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px 24px; text-align:center; box-shadow:var(--shadow-sm); min-width:110px; }
+  .scan-stat-value { font-size:22px; font-weight:800; letter-spacing:-0.5px; }
+  .scan-stat-label { font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:0.3px; text-transform:uppercase; margin-top:2px; }
+
+  /* ─── MATCHING ─── */
+  .match-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; gap:28px; }
+  .match-title { font-size:13px; color:var(--text-muted); font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
+  .match-nodes { display:flex; align-items:center; gap:16px; }
+  .match-node { width:100px; height:100px; border-radius:var(--radius); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border:2px solid var(--border-med); background:var(--white); position:relative; transition:all 0.5s; box-shadow:var(--shadow-sm); }
+  .match-node.searching { border-color:var(--purple); animation:glow 1.5s ease infinite; }
+  .match-node.found { border-color:var(--green); }
+  .match-node-icon { font-size:28px; }
+  .match-node-label { font-size:9px; font-weight:700; color:var(--text-muted); letter-spacing:0.8px; text-transform:uppercase; }
+  .match-node-status { position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:700; padding:3px 12px; border-radius:12px; white-space:nowrap; }
+  .match-node-status.searching { background:var(--purple); color:white; }
+  .match-node-status.found { background:var(--green); color:white; }
+  .match-connector { width:32px; height:2px; background:var(--border-med); }
+  .match-center { width:64px; height:64px; border-radius:50%; background:var(--text); display:flex; align-items:center; justify-content:center; position:relative; }
+  .match-center svg { width:24px; height:24px; color:white; }
+  .match-ripple { position:absolute; inset:0; border-radius:50%; border:2px solid var(--text); animation:ripple 2s ease-out infinite; }
+  .match-ripple:nth-child(2) { animation-delay:0.6s; }
+  .match-result { text-align:center; opacity:0; transition:all 0.5s; }
+  .match-result.visible { opacity:1; }
+  .match-result-name { font-size:26px; font-weight:800; letter-spacing:-0.5px; }
+  .match-result-email { font-size:13px; color:var(--text-sec); margin-top:4px; }
+  .match-result-badge { display:inline-flex; align-items:center; gap:5px; margin-top:12px; padding:5px 14px; border-radius:20px; background:var(--gold-light); border:1px solid rgba(199,149,45,0.2); font-size:11px; font-weight:700; color:var(--gold); letter-spacing:0.3px; }
+  .match-confidence { display:flex; align-items:center; gap:8px; opacity:0; transition:all 0.5s; }
+  .match-confidence.visible { opacity:1; }
+  .match-confidence-bar { width:120px; height:4px; border-radius:2px; background:var(--surface-3); overflow:hidden; }
+  .match-confidence-fill { height:100%; border-radius:2px; background:var(--green); width:0; transition:width 1s ease; }
+  .match-confidence-label { font-size:11px; color:var(--text-muted); font-weight:500; }
+  .match-confidence-value { font-size:13px; color:var(--green); font-weight:700; }
+  .match-proceed { padding:14px 48px; border-radius:14px; border:none; background:var(--text); color:white; font-size:15px; font-weight:700; cursor:pointer; opacity:0; transition:all 0.3s; font-family:inherit; box-shadow:var(--shadow); }
+  .match-proceed.visible { opacity:1; }
+  .match-proceed:hover { opacity:0.85; transform:translateY(-1px); box-shadow:var(--shadow-lg); }
+
+  /* ─── PROFILE ─── */
+  .profile-hero { background:var(--white); padding:20px 24px 0; border-bottom:1px solid var(--border); }
+  .profile-top-row { display:flex; align-items:flex-start; justify-content:space-between; }
+  .back-btn { background:none; border:none; color:var(--text-sec); cursor:pointer; display:flex; align-items:center; gap:3px; font-size:13px; font-weight:500; padding:0; transition:color 0.2s; font-family:inherit; }
+  .back-btn:hover { color:var(--text); }
+  .back-btn svg { width:18px; height:18px; }
+  .profile-header { display:flex; gap:14px; align-items:center; margin-top:14px; }
+  .profile-avatar { width:56px; height:56px; border-radius:16px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:var(--text-sec); flex-shrink:0; }
+  .profile-name { font-size:20px; font-weight:800; letter-spacing:-0.4px; }
+  .profile-email { font-size:11px; color:var(--text-muted); margin-top:1px; }
+  .profile-tags { display:flex; gap:5px; margin-top:6px; flex-wrap:wrap; }
+  .profile-tag { padding:3px 8px; border-radius:6px; font-size:9px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase; }
+  .tag-tier { background:var(--gold-light); color:var(--gold); }
+  .tag-vip { background:var(--purple-light); color:var(--purple); }
+  .tag-segment { background:var(--green-light); color:var(--green); }
+  .tag-intl { background:var(--blue-light); color:var(--blue); }
+  .profile-ltv { display:flex; align-items:center; gap:16px; margin-top:16px; padding:14px 16px; background:var(--surface-2); border-radius:var(--radius-sm); }
+  .ltv-main-label { font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:0.3px; text-transform:uppercase; }
+  .ltv-main-val { font-size:28px; font-weight:900; letter-spacing:-1px; }
+  .ltv-divider { width:1px; height:32px; background:var(--border-med); }
+  .ltv-channels { display:flex; gap:16px; }
+  .ltv-ch-label { font-size:10px; color:var(--text-muted); font-weight:500; }
+  .ltv-ch-val { font-size:15px; font-weight:700; letter-spacing:-0.3px; }
+  .profile-tabs { display:flex; gap:0; margin-top:14px; }
+  .profile-tab { flex:1; padding:12px; text-align:center; font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; }
+  .profile-tab.active { color:var(--text); border-bottom-color:var(--text); }
+  .tab-content { display:none; padding:20px 24px; flex:1; overflow-y:auto; background:var(--bg); }
+  .tab-content.active { display:block; animation:fadeIn 0.25s ease; }
+
+  /* Overview */
+  .overview-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .ov-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; box-shadow:var(--shadow-sm); }
+  .ov-card.full { grid-column:1/-1; }
+  .ov-label { font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:0.3px; text-transform:uppercase; margin-bottom:4px; }
+  .ov-value { font-size:22px; font-weight:800; letter-spacing:-0.3px; }
+  .ov-sub { font-size:11px; color:var(--text-sec); margin-top:2px; }
+  .loyalty-track { height:6px; border-radius:3px; background:var(--surface-3); overflow:hidden; margin-top:8px; }
+  .loyalty-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--gold),#E8C468); }
+  .loyalty-labels { display:flex; justify-content:space-between; margin-top:4px; }
+  .loyalty-label-t { font-size:9px; color:var(--text-muted); font-weight:500; }
+  .alert-card { display:flex; align-items:center; gap:10px; margin-top:12px; padding:12px 14px; background:var(--red-light); border:1px solid rgba(255,59,48,0.15); border-radius:var(--radius-sm); }
+  .alert-icon { font-size:16px; }
+  .alert-text { font-size:12px; color:var(--red); font-weight:500; line-height:1.4; }
+  .pref-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
+  .pref-row:last-child { border:none; }
+  .pref-key { font-size:12px; color:var(--text-sec); }
+  .pref-val { font-size:12px; font-weight:600; }
+
+  /* SA Intel */
+  .intel-section { margin-bottom:20px; }
+  .intel-heading { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:0.8px; text-transform:uppercase; margin-bottom:10px; }
+  .intel-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; box-shadow:var(--shadow-sm); }
+  .intel-card.highlight { border-left:3px solid var(--purple); }
+  .intel-opener { display:flex; gap:10px; align-items:flex-start; }
+  .intel-opener-icon { font-size:20px; flex-shrink:0; }
+  .intel-opener-text { font-size:13px; line-height:1.5; color:var(--text-sec); }
+  .intel-opener-text strong { color:var(--text); font-weight:600; }
+  .intel-signal { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:6px; box-shadow:var(--shadow-sm); }
+  .intel-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .intel-signal-text { font-size:12px; color:var(--text-sec); }
+  .intel-signal-text strong { color:var(--text); font-weight:600; }
+  .intel-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .intel-do,.intel-dont { padding:12px; border-radius:var(--radius-sm); font-size:12px; line-height:1.5; }
+  .intel-do { background:var(--green-light); color:#1B7A37; }
+  .intel-dont { background:var(--red-light); color:var(--red); }
+  .intel-box-title { font-weight:700; margin-bottom:4px; font-size:10px; letter-spacing:0.5px; text-transform:uppercase; }
+
+  /* Footer nav */
+  .footer-nav { display:flex; border-top:1px solid var(--border); background:var(--white); padding:6px 0 max(6px,env(safe-area-inset-bottom)); }
+  .footer-nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0; cursor:pointer; transition:color 0.2s; color:var(--text-muted); }
+  .footer-nav-item.active { color:var(--text); }
+  .footer-nav-item svg { width:20px; height:20px; }
+  .footer-nav-item span { font-size:9px; font-weight:600; letter-spacing:0.3px; }
+
+  /* Search Modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:100; align-items:flex-start; justify-content:center; padding-top:60px; backdrop-filter:blur(12px); }
+  .modal-overlay.active { display:flex; animation:fadeIn 0.2s ease; }
+  .modal { width:90%; max-width:420px; background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-lg); }
+  .modal-search { display:flex; align-items:center; gap:10px; padding:16px; border-bottom:1px solid var(--border); }
+  .modal-search svg { width:18px; height:18px; color:var(--text-muted); flex-shrink:0; }
+  .modal-search input { flex:1; background:none; border:none; outline:none; color:var(--text); font-size:16px; font-family:inherit; }
+  .modal-search input::placeholder { color:var(--text-muted); }
+  .modal-results { max-height:340px; overflow-y:auto; }
+  .modal-result { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; transition:background 0.12s; }
+  .modal-result:hover { background:var(--surface-2); }
+  .modal-result-avatar { width:36px; height:36px; border-radius:10px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:var(--text-sec); }
+  .modal-result-info { flex:1; }
+  .modal-result-name { font-size:14px; font-weight:600; }
+  .modal-result-detail { font-size:11px; color:var(--text-muted); }
+  .modal-result-tier { font-size:10px; font-weight:700; color:var(--gold); }
+  .modal-not-found { display:none; flex-direction:column; align-items:center; gap:12px; padding:32px 24px; text-align:center; }
+  .modal-not-found.active { display:flex; }
+  .modal-not-found-icon { font-size:32px; opacity:0.3; }
+  .modal-not-found-text { font-size:13px; color:var(--text-muted); }
+  .modal-not-found-btn { padding:10px 24px; border-radius:12px; border:none; background:var(--text); color:white; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:6px; box-shadow:var(--shadow-sm); }
+  .modal-new-client-divider { display:flex; align-items:center; gap:12px; padding:8px 16px; border-top:1px solid var(--border); }
+  .modal-new-client-divider span { font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
+  .modal-new-client-divider::before,.modal-new-client-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .modal-new-client-row { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; transition:background 0.12s; }
+  .modal-new-client-row:hover { background:var(--surface-2); }
+  .modal-new-client-icon { width:36px; height:36px; border-radius:10px; background:var(--green-light); display:flex; align-items:center; justify-content:center; }
+  .modal-new-client-icon svg { width:18px; height:18px; color:var(--green); }
+  .modal-new-client-label { font-size:14px; font-weight:600; color:var(--green); }
+
+  /* Loading spinner */
+  .spinner { width:20px; height:20px; border:2px solid var(--border-med); border-top-color:var(--purple); border-radius:50%; animation:spin 0.7s linear infinite; margin:auto; }
+
+  /* Create client */
+  .create-scroll { flex:1; overflow-y:auto; background:var(--bg); padding:20px 24px 32px; }
+  .create-section { margin-bottom:20px; }
+  .create-section-title { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:0.8px; text-transform:uppercase; margin-bottom:10px; padding-left:2px; }
+  .create-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px 0; box-shadow:var(--shadow-sm); overflow:hidden; }
+  .create-field { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); }
+  .create-field:last-child { border-bottom:none; }
+  .create-field-label { width:110px; flex-shrink:0; font-size:13px; color:var(--text-sec); font-weight:500; }
+  .create-field-input { flex:1; border:none; outline:none; background:none; font-size:14px; color:var(--text); font-family:inherit; font-weight:500; }
+  .create-field-input::placeholder { color:var(--text-muted); font-weight:400; }
+  .create-field-select { flex:1; border:none; outline:none; background:none; font-size:14px; color:var(--text); font-family:inherit; font-weight:500; -webkit-appearance:none; cursor:pointer; }
+  .create-field-textarea { flex:1; border:none; outline:none; background:none; resize:none; font-size:13px; color:var(--text); font-family:inherit; font-weight:400; line-height:1.5; min-height:60px; }
+  .create-field-textarea::placeholder { color:var(--text-muted); }
+  .consent-block { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; box-shadow:var(--shadow-sm); }
+  .consent-row { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .consent-row:last-child { border-bottom:none; }
+  .consent-toggle { width:44px; height:26px; border-radius:13px; border:none; background:var(--surface-3); position:relative; cursor:pointer; transition:background 0.2s; flex-shrink:0; margin-top:1px; }
+  .consent-toggle::after { content:''; position:absolute; width:20px; height:20px; border-radius:50%; background:white; top:3px; left:3px; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+  .consent-toggle.on { background:var(--green); }
+  .consent-toggle.on::after { transform:translateX(18px); }
+  .consent-info { flex:1; }
+  .consent-label { font-size:13px; font-weight:600; }
+  .consent-desc { font-size:11px; color:var(--text-muted); margin-top:2px; line-height:1.4; }
+  .consent-legal { font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:12px; padding:10px 12px; background:var(--surface-2); border-radius:var(--radius-xs); }
+  .create-actions { display:flex; gap:10px; margin-top:24px; padding:0 2px; }
+  .create-btn-save { flex:1; padding:15px; border-radius:14px; border:none; background:var(--text); color:white; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:var(--shadow); transition:all 0.2s; }
+  .create-btn-save:hover { opacity:0.85; transform:translateY(-1px); }
+  .create-btn-cancel { padding:15px 24px; border-radius:14px; border:1px solid var(--border-med); background:var(--white); color:var(--text-sec); font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .create-success-overlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,0.95); z-index:200; flex-direction:column; align-items:center; justify-content:center; gap:16px; backdrop-filter:blur(20px); }
+  .create-success-overlay.active { display:flex; animation:fadeIn 0.3s ease; }
+  .create-success-check { width:72px; height:72px; border-radius:50%; background:var(--green-light); display:flex; align-items:center; justify-content:center; }
+  .create-success-check svg { width:36px; height:36px; color:var(--green); }
+
+  /* Lookup overlays */
+  .lookup-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:100; display:none; align-items:flex-end; justify-content:center; backdrop-filter:blur(4px); }
+  .lookup-overlay.active { display:flex; }
+  .lookup-sheet { background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:420px; animation:slideUp 0.3s ease; }
+  .lookup-title { font-size:15px; font-weight:700; text-align:center; padding:8px 16px 14px; border-bottom:1px solid var(--border); }
+  .lookup-input { width:100%; padding:12px 14px; border:1.5px solid var(--border-med); border-radius:var(--radius-sm); font-size:15px; font-family:inherit; background:var(--surface-2); color:var(--text); outline:none; transition:border-color 0.2s; }
+  .lookup-input:focus { border-color:var(--purple); }
+  .lookup-input::placeholder { color:var(--text-muted); }
+  .set-picker-handle { width:36px; height:4px; border-radius:2px; background:var(--border-med); margin:10px auto 6px; }
+
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border-med); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SCREEN 0: LOGIN ═══════════ -->
+<style>
+  .login-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 32px; background:linear-gradient(180deg,#FAFAFA 0%,#F0EDFF 100%); }
+  .login-logo { font-size:11px; font-weight:800; letter-spacing:6px; text-transform:uppercase; margin-bottom:6px; }
+  .login-app-name { font-size:28px; font-weight:900; letter-spacing:-0.5px; margin-bottom:4px; }
+  .login-subtitle { font-size:13px; color:var(--text-sec); margin-bottom:36px; }
+  .login-field { width:100%; max-width:320px; margin-bottom:14px; }
+  .login-field label { display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:5px; }
+  .login-field input { width:100%; padding:14px 16px; border:1.5px solid var(--border-med); border-radius:12px; font-size:15px; font-family:inherit; background:var(--surface); color:var(--text); outline:none; transition:border-color 0.2s; }
+  .login-field input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(108,92,231,0.1); }
+  .login-field input::placeholder { color:var(--text-muted); }
+  .login-btn { width:100%; max-width:320px; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; transition:all 0.2s; margin-top:6px; }
+  .login-btn-primary { background:var(--text); color:var(--surface); }
+  .login-btn-primary:active { transform:scale(0.98); }
+  .login-divider { display:flex; align-items:center; gap:12px; width:100%; max-width:320px; margin:18px 0; }
+  .login-divider::before,.login-divider::after { content:''; flex:1; height:1px; background:var(--border-med); }
+  .login-divider span { font-size:11px; color:var(--text-muted); font-weight:500; }
+  .login-btn-sso { background:var(--surface); color:var(--text); border:1.5px solid var(--border-med); display:flex; align-items:center; justify-content:center; gap:8px; }
+</style>
+
+<div id="screen-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-logo">ALO YOGA</div>
+    <div class="login-app-name">Client One</div>
+    <div class="login-subtitle">Clienteling Intelligence Platform</div>
+    <div class="login-field">
+      <label>Work Email</label>
+      <input type="email" id="loginEmail" placeholder="your.name@aloyoga.com" autocomplete="email" />
+    </div>
+    <button class="login-btn login-btn-primary" onclick="loginSSO()">Continue</button>
+    <div class="login-divider"><span>or</span></div>
+    <button class="login-btn login-btn-sso" onclick="loginSSO()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Sign in with Alo SSO
+    </button>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:20px;text-align:center;max-width:260px;line-height:1.4">
+      Access is restricted to authorized Alo Yoga associates.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SCREEN 1: SCAN ═══════════ -->
+<div id="screen-scan" class="screen">
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-logo">C1</div>
+      <div class="header-title">CLIENT ONE <span class="header-v">v2</span></div>
+    </div>
+    <div class="header-store" id="scanStoreName">Paris — Le Marais</div>
+  </div>
+
+  <div class="scan-hero">
+    <div class="scan-zone" onclick="openSearch()">
+      <div class="scan-corners"></div>
+      <div class="scan-bl"></div>
+      <div class="scan-br"></div>
+      <div class="scan-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <div class="scan-label">Search clients</div>
+      </div>
+    </div>
+
+    <div class="scan-actions">
+      <button class="scan-btn" onclick="openSearch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Search
+      </button>
+      <button class="scan-btn" onclick="openPhoneLookup()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.12 4.18 2 2 0 0 1 5.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+        Phone
+      </button>
+      <button class="scan-btn" onclick="goTo('create')" style="background:var(--green-light);border-color:rgba(52,199,89,0.2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        <span style="color:var(--green)">New</span>
+      </button>
+    </div>
+
+    <div class="scan-stats">
+      <div class="scan-stat">
+        <div class="scan-stat-value" style="color:var(--green)">—</div>
+        <div class="scan-stat-label">Today LTV</div>
+      </div>
+      <div class="scan-stat">
+        <div class="scan-stat-value">—</div>
+        <div class="scan-stat-label">Clients</div>
+      </div>
+      <div class="scan-stat">
+        <div class="scan-stat-value" style="color:var(--purple)">Live</div>
+        <div class="scan-stat-label">Status</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-nav">
+    <div class="footer-nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Search</span></div>
+    <div class="footer-nav-item" onclick="openSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Clients</span></div>
+    <div class="footer-nav-item" onclick="goTo('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span>Settings</span></div>
+  </div>
+</div>
+
+<!-- ═══════════ SCREEN 2: MATCHING ═══════════ -->
+<div id="screen-match" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goTo('scan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Back</button>
+    <div class="header-store" style="color:var(--text-muted)">Resolving identity…</div>
+  </div>
+  <div class="match-container">
+    <div class="match-title">Customer Identity Resolution</div>
+    <div class="match-nodes">
+      <div class="match-node" id="node-digital">
+        <div class="match-node-icon">🛒</div>
+        <div class="match-node-label">Digital</div>
+        <div class="match-node-status" id="status-digital">…</div>
+      </div>
+      <div class="match-connector"></div>
+      <div class="match-center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+        <div class="match-ripple"></div>
+        <div class="match-ripple"></div>
+      </div>
+      <div class="match-connector"></div>
+      <div class="match-node" id="node-retail">
+        <div class="match-node-icon">🏬</div>
+        <div class="match-node-label">Retail</div>
+        <div class="match-node-status" id="status-retail">…</div>
+      </div>
+    </div>
+    <div class="match-result" id="matchResult">
+      <div class="match-result-name" id="matchName">—</div>
+      <div class="match-result-email" id="matchEmail"></div>
+      <div class="match-result-badge" id="matchBadge"></div>
+    </div>
+    <div class="match-confidence" id="matchConfidence">
+      <div class="match-confidence-label">Match confidence</div>
+      <div class="match-confidence-bar"><div class="match-confidence-fill" id="confidenceFill"></div></div>
+      <div class="match-confidence-value" id="matchConfVal">—</div>
+    </div>
+    <button class="match-proceed" id="proceedBtn" onclick="goTo('profile')">View Full Profile →</button>
+  </div>
+</div>
+
+<!-- ═══════════ SCREEN 3: PROFILE ═══════════ -->
+<div id="screen-profile" class="screen">
+  <div class="profile-hero">
+    <div class="profile-top-row">
+      <button class="back-btn" onclick="goTo('scan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Back</button>
+      <div style="font-size:11px;color:var(--text-muted)" id="profileSyncTime">Last synced: just now</div>
+    </div>
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">—</div>
+      <div>
+        <div class="profile-name" id="profileName">Loading…</div>
+        <div class="profile-email" id="profileContact"></div>
+        <div class="profile-tags" id="profileTags"></div>
+      </div>
+    </div>
+    <div class="profile-ltv">
+      <div>
+        <div class="ltv-main-label">3-Year Revenue</div>
+        <div class="ltv-main-val" id="profileLtv">—</div>
+      </div>
+      <div class="ltv-divider"></div>
+      <div class="ltv-channels" id="profileLtvChannels">
+        <div>
+          <div class="ltv-ch-label">Last 52w</div>
+          <div class="ltv-ch-val" id="profileRev52w">—</div>
+        </div>
+        <div>
+          <div class="ltv-ch-label">Orders (3yr)</div>
+          <div class="ltv-ch-val" id="profileOrderCount">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="profile-tabs">
+      <div class="profile-tab active" onclick="switchTab('overview',this)">Overview</div>
+      <div class="profile-tab" onclick="switchTab('purchases',this);loadPurchases()">Purchases</div>
+      <div class="profile-tab" onclick="switchTab('intel',this)">SA Intel</div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="overview-grid">
+      <!-- Recency -->
+      <div class="ov-card">
+        <div class="ov-label">Days Since Last Order</div>
+        <div class="ov-value" id="ovDaysSince">—</div>
+        <div class="ov-sub" id="ovLastDate"></div>
+      </div>
+      <!-- Orders -->
+      <div class="ov-card">
+        <div class="ov-label">Orders (3yr / 52w)</div>
+        <div class="ov-value" id="ovOrdersL3y">—</div>
+        <div class="ov-sub" id="ovOrders52w"></div>
+      </div>
+      <!-- Loyalty -->
+      <div class="ov-card">
+        <div class="ov-label">Loyalty Tier</div>
+        <div class="ov-value" style="font-size:16px" id="ovTier">—</div>
+        <div class="ov-sub" id="ovLoyaltyStatus"></div>
+      </div>
+      <!-- Location -->
+      <div class="ov-card">
+        <div class="ov-label">Location</div>
+        <div class="ov-value" style="font-size:16px" id="ovLocation">—</div>
+        <div class="ov-sub" id="ovZip"></div>
+      </div>
+      <!-- Order dates (full-width) -->
+      <div class="ov-card full">
+        <div class="ov-label">Order History</div>
+        <div class="pref-row"><span class="pref-key">First order</span><span class="pref-val" id="ovFirstOrder">—</span></div>
+        <div class="pref-row"><span class="pref-key">Last order</span><span class="pref-val" id="ovLastOrderFull">—</span></div>
+        <div class="pref-row"><span class="pref-key">Revenue (last 52w)</span><span class="pref-val" id="ovRev52w">—</span></div>
+        <div class="pref-row"><span class="pref-key">Units ordered (live)</span><span class="pref-val" id="ovUnits">—</span></div>
+      </div>
+      <!-- Loyalty progress -->
+      <div class="ov-card full" id="ovLoyaltyCard" style="display:none">
+        <div class="ov-label">Loyalty Progress</div>
+        <div class="loyalty-track"><div class="loyalty-fill" id="loyaltyFill" style="width:50%"></div></div>
+        <div class="loyalty-labels">
+          <span class="loyalty-label-t" id="loyaltyLeft">—</span>
+          <span class="loyalty-label-t" id="loyaltyRight">—</span>
+        </div>
+      </div>
+      <!-- Communication preferences -->
+      <div class="ov-card full">
+        <div class="ov-label">Communication Preferences</div>
+        <div class="pref-row"><span class="pref-key">Preferred channel</span><span class="pref-val" id="prefChannel">—</span></div>
+        <div class="pref-row"><span class="pref-key">Total channels subscribed</span><span class="pref-val" id="prefTotalChannels">—</span></div>
+        <div class="pref-row"><span class="pref-key">Email subscribed</span><span class="pref-val" id="prefEmail">—</span></div>
+        <div class="pref-row"><span class="pref-key">Email reachable</span><span class="pref-val" id="prefEmailReachable">—</span></div>
+        <div class="pref-row"><span class="pref-key">SMS subscribed</span><span class="pref-val" id="prefSms">—</span></div>
+        <div class="pref-row"><span class="pref-key">SMS reachable</span><span class="pref-val" id="prefSmsReachable">—</span></div>
+        <div class="pref-row"><span class="pref-key">Push notifications</span><span class="pref-val" id="prefPush">—</span></div>
+        <div class="pref-row"><span class="pref-key">Push reachable</span><span class="pref-val" id="prefPushReachable">—</span></div>
+      </div>
+      <!-- Profile details -->
+      <div class="ov-card full">
+        <div class="ov-label">Profile Details</div>
+        <div class="pref-row"><span class="pref-key">Birthday</span><span class="pref-val" id="prefBirthday">—</span></div>
+        <div class="pref-row"><span class="pref-key">Membership expires</span><span class="pref-val" id="prefMemberExpiry">—</span></div>
+        <div class="pref-row"><span class="pref-key">Omni geo segment</span><span class="pref-val" id="prefOmniSeg">—</span></div>
+        <div class="pref-row"><span class="pref-key">Digital geo segment</span><span class="pref-val" id="prefDigitalSeg">—</span></div>
+        <div class="pref-row"><span class="pref-key">Customer type</span><span class="pref-val" id="prefDomIntl">—</span></div>
+      </div>
+    </div>
+    <div class="alert-card" id="lapsedAlert" style="display:none">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-text" id="lapsedAlertText"></div>
+    </div>
+    <div class="alert-card" id="incompleteAlert" style="display:none;background:var(--surface);border:1px solid var(--border)">
+      <div class="alert-icon">ℹ️</div>
+      <div class="alert-text" style="color:var(--text-muted)">No purchase history found for this customer. Profile data may be incomplete.</div>
+    </div>
+  </div>
+
+  <!-- PURCHASES TAB -->
+  <div class="tab-content" id="tab-purchases">
+    <div id="purchasesSummary" style="display:flex;gap:8px;padding:16px 24px 8px;flex-wrap:wrap"></div>
+    <div id="purchasesList" style="padding:0 16px 24px">
+      <div style="padding:40px;text-align:center;color:var(--text-muted)">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SA INTEL TAB -->
+  <div class="tab-content" id="tab-intel">
+    <div class="intel-section">
+      <div class="intel-heading">Conversation Starters</div>
+      <div id="intelStarters"></div>
+    </div>
+    <div class="intel-section">
+      <div class="intel-heading">Behavioral Signals</div>
+      <div id="intelSignals"></div>
+    </div>
+    <div class="intel-section">
+      <div class="intel-heading">Do's &amp; Don'ts</div>
+      <div class="intel-grid">
+        <div class="intel-do" id="intelDos"><div class="intel-box-title">✓ Do</div></div>
+        <div class="intel-dont" id="intelDonts"><div class="intel-box-title">✗ Don't</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-nav">
+    <div class="footer-nav-item" onclick="goTo('scan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Search</span></div>
+    <div class="footer-nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Profile</span></div>
+    <div class="footer-nav-item" onclick="goTo('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span>Settings</span></div>
+  </div>
+</div>
+
+<!-- ═══════════ SCREEN 4: CREATE CLIENT ═══════════ -->
+<div id="screen-create" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goTo('scan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Cancel</button>
+    <div class="header-title" style="font-size:14px">New Client</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="create-scroll">
+    <div class="create-section">
+      <div class="create-section-title">Identity</div>
+      <div class="create-card">
+        <div class="create-field"><label class="create-field-label">First Name *</label><input class="create-field-input" type="text" placeholder="e.g. Isabelle" id="nc-first"></div>
+        <div class="create-field"><label class="create-field-label">Last Name *</label><input class="create-field-input" type="text" placeholder="e.g. Laurent" id="nc-last"></div>
+      </div>
+    </div>
+    <div class="create-section">
+      <div class="create-section-title">Contact</div>
+      <div class="create-card">
+        <div class="create-field"><label class="create-field-label">Email *</label><input class="create-field-input" type="email" placeholder="email@example.com" id="nc-email"></div>
+        <div class="create-field"><label class="create-field-label">Phone</label><input class="create-field-input" type="tel" placeholder="+1 (555) 000-0000" id="nc-phone"></div>
+      </div>
+    </div>
+    <div class="create-section">
+      <div class="create-section-title">Personal</div>
+      <div class="create-card">
+        <div class="create-field"><label class="create-field-label">Birthday</label><input class="create-field-input" type="date" id="nc-birthday"></div>
+        <div class="create-field"><label class="create-field-label">City</label><input class="create-field-input" type="text" placeholder="e.g. Paris" id="nc-city"></div>
+      </div>
+    </div>
+    <div class="create-section">
+      <div class="create-section-title">Privacy &amp; Consent</div>
+      <div class="consent-block">
+        <div class="consent-row">
+          <button class="consent-toggle on" id="consent-data" onclick="this.classList.toggle('on')"></button>
+          <div class="consent-info"><div class="consent-label">Data Processing</div><div class="consent-desc">I consent to Alo Yoga storing and processing my personal data.</div></div>
+        </div>
+        <div class="consent-row">
+          <button class="consent-toggle on" id="consent-marketing" onclick="this.classList.toggle('on')"></button>
+          <div class="consent-info"><div class="consent-label">Marketing Communications</div><div class="consent-desc">I'd like to receive personalized recommendations.</div></div>
+        </div>
+        <div class="consent-legal">Data is processed under GDPR Art. 6(1)(a). The client may request erasure at any time.</div>
+      </div>
+    </div>
+    <div class="create-actions">
+      <button class="create-btn-cancel" onclick="goTo('scan')">Cancel</button>
+      <button class="create-btn-save" onclick="saveNewClient()">Create Client</button>
+    </div>
+  </div>
+</div>
+
+<div class="create-success-overlay" id="createSuccess">
+  <div class="create-success-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5L20 7"/></svg></div>
+  <div style="font-size:20px;font-weight:800" id="successName">Client Created</div>
+  <div style="font-size:13px;color:var(--text-sec)">Profile synced across all stores</div>
+</div>
+
+<!-- ═══════════ SCREEN 5: SETTINGS ═══════════ -->
+<style>
+  .set-section { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px; font-weight:700; margin:18px 0 10px; padding:0 2px; }
+  .set-card { background:var(--surface); border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); border:1px solid var(--border); margin-bottom:16px; overflow:hidden; }
+  .set-row { display:flex; justify-content:space-between; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); }
+  .set-row:last-child { border-bottom:none; }
+  .set-label { font-size:13px; font-weight:500; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .set-value { font-size:13px; font-weight:600; }
+  .set-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
+  .set-badge-green { background:rgba(52,199,89,0.12); color:var(--green); }
+  .set-badge-blue { background:rgba(0,122,255,0.1); color:var(--blue); }
+
+  /* ── Purchases tab ── */
+  .purchase-chip { display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;background:var(--surface-2);font-size:11px;font-weight:600;color:var(--text-sec); }
+  .purchase-row { display:flex;align-items:center;gap:12px;padding:14px 8px;border-bottom:1px solid var(--border); }
+  .purchase-row:last-child { border-bottom:none; }
+  .purchase-icon { width:40px;height:40px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
+  .purchase-info { flex:1;min-width:0; }
+  .purchase-name { font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .purchase-meta { display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px;color:var(--text-muted); }
+  .purchase-badge { font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 5px;border-radius:3px;text-transform:uppercase; }
+  .badge-digital { background:#e8f4ff;color:#1a7fd4; }
+  .badge-retail  { background:#f0faf0;color:#2e8b57; }
+  .purchase-price { font-size:14px;font-weight:700;color:var(--text);flex-shrink:0; }
+</style>
+
+<div id="screen-settings" class="screen">
+  <div class="header">
+    <div style="width:60px"></div>
+    <div><div class="header-title" style="font-size:14px">Settings</div><div class="header-sub">Configuration</div></div>
+    <div style="width:60px"></div>
+  </div>
+  <div style="padding:0 16px 16px;overflow-y:auto;flex:1">
+    <div class="set-section">Your Profile</div>
+    <div class="set-card">
+      <div class="set-row">
+        <div class="set-label" id="settingsProfileDisplay">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6C5CE7,#A29BFE);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff" id="settingsAvatar">GL</div>
+          <div>
+            <div style="font-weight:700" id="settingsProfileName">Guillermo Lopez</div>
+            <div style="font-size:10px;color:var(--text-muted)" id="settingsProfileEmail">g.lopez@aloyoga.com</div>
+          </div>
+        </div>
+        <div class="set-badge set-badge-blue">SA</div>
+      </div>
+      <div class="set-row" style="cursor:pointer" onclick="goTo('login')">
+        <span style="font-size:13px;font-weight:600;color:var(--red);width:100%;text-align:center">Sign Out</span>
+      </div>
+    </div>
+
+    <div class="set-section">Backend</div>
+    <div class="set-card">
+      <div class="set-row">
+        <div class="set-label">Cube API</div>
+        <div class="set-badge set-badge-green" id="cubeStatus">Checking…</div>
+      </div>
+      <div class="set-row">
+        <div class="set-label">Backend URL</div>
+        <span class="set-value" style="color:var(--text-muted);font-size:11px">{{ backend_url }}</span>
+      </div>
+    </div>
+
+    <div class="set-section">Integrations</div>
+    <div class="set-card">
+      <div class="set-row"><div class="set-label">customer_360 Cube View</div><div class="set-badge set-badge-green">Active</div></div>
+      <div class="set-row"><div class="set-label">Redshift Warehouse</div><div class="set-badge set-badge-green">Connected</div></div>
+    </div>
+
+    <div style="text-align:center;padding:16px 0 30px">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600">CLIENT ONE v2.0.0</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px">Powered by Cube · customer_360</div>
+    </div>
+  </div>
+  <div class="footer-nav">
+    <div class="footer-nav-item" onclick="goTo('scan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Search</span></div>
+    <div class="footer-nav-item" onclick="openSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Clients</span></div>
+    <div class="footer-nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span>Settings</span></div>
+  </div>
+</div>
+
+<!-- ═══════════ SEARCH MODAL ═══════════ -->
+<div class="modal-overlay" id="searchModal" onclick="if(event.target===this)closeSearchForce()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Name, email, or phone…" id="searchInput" oninput="onSearchInput()" autocomplete="off">
+    </div>
+    <div class="modal-results" id="searchResults">
+      <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Type to search customers…</div>
+    </div>
+    <div class="modal-not-found" id="modalNotFound">
+      <div class="modal-not-found-icon">🔍</div>
+      <div class="modal-not-found-text">No clients match your search</div>
+      <button class="modal-not-found-btn" onclick="goToCreate()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+        Create New Client
+      </button>
+    </div>
+    <div class="modal-new-client-divider"><span>or</span></div>
+    <div class="modal-new-client-row" onclick="goToCreate()">
+      <div class="modal-new-client-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+      <div class="modal-new-client-label">Create New Client</div>
+    </div>
+  </div>
+</div>
+
+<!-- Phone Lookup Overlay -->
+<div class="lookup-overlay" id="phoneLookupOverlay" onclick="if(event.target===this)closePhoneLookup()">
+  <div class="lookup-sheet">
+    <div class="set-picker-handle"></div>
+    <div class="lookup-title">Look up by phone</div>
+    <div style="padding:0 16px 20px">
+      <input type="tel" id="phoneInput" placeholder="+1 (555) 000-0000" class="lookup-input" />
+      <div id="phoneLookupResult" style="margin-top:10px;min-height:40px"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button onclick="closePhoneLookup()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-weight:600;font-size:15px;cursor:pointer;font-family:inherit">Cancel</button>
+        <button onclick="submitPhoneLookup()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--purple);color:white;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit">Search</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── State ───
+  let currentCustomer = null;
+  let searchDebounce = null;
+
+  const TIER_LABELS = {tier1:'Silver',tier2:'Gold',tier3:'Platinum',tier4:'Obsidian',tier5:'Diamond',tier6:'VIC'};
+  function fmtTier(raw) {
+    if (!raw) return '';
+    return TIER_LABELS[raw.toLowerCase()] || raw.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // ─── Navigation ───
+  function goTo(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + screen).classList.add('active');
+    if (screen === 'settings') checkCubeStatus();
+  }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  // ─── Auth ───
+  function loginSSO() {
+    const email = document.getElementById('loginEmail').value.trim() || 'g.lopez@aloyoga.com';
+    const name = email.includes('@aloyoga.com')
+      ? email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
+      : 'Store Associate';
+    const initials = name.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
+    document.getElementById('settingsProfileName').textContent = name;
+    document.getElementById('settingsProfileEmail').textContent = email;
+    document.getElementById('settingsAvatar').textContent = initials;
+    goTo('scan');
+  }
+
+  // ─── Search Modal ───
+  function openSearch() {
+    document.getElementById('searchModal').classList.add('active');
+    document.getElementById('modalNotFound').classList.remove('active');
+    document.getElementById('searchResults').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Type to search customers…</div>';
+    setTimeout(() => document.getElementById('searchInput').focus(), 150);
+  }
+
+  function closeSearchForce() {
+    document.getElementById('searchModal').classList.remove('active');
+    document.getElementById('searchInput').value = '';
+    document.getElementById('modalNotFound').classList.remove('active');
+    if (searchDebounce) { clearTimeout(searchDebounce); searchDebounce = null; }
+  }
+
+  function onSearchInput() {
+    const q = document.getElementById('searchInput').value.trim();
+    if (searchDebounce) clearTimeout(searchDebounce);
+
+    if (q.length < 2) {
+      document.getElementById('searchResults').innerHTML =
+        '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Type to search customers…</div>';
+      document.getElementById('modalNotFound').classList.remove('active');
+      return;
+    }
+
+    document.getElementById('searchResults').innerHTML = '<div style="padding:24px;text-align:center"><div class="spinner"></div></div>';
+    document.getElementById('modalNotFound').classList.remove('active');
+
+    searchDebounce = setTimeout(() => {
+      fetch('/api/customers/search?q=' + encodeURIComponent(q))
+        .then(r => {
+          if (!r.ok) throw new Error('API ' + r.status);
+          return r.json();
+        })
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          renderSearchResults(data.customers || []);
+        })
+        .catch(err => {
+          console.error('[search]', err);
+          document.getElementById('searchResults').innerHTML =
+            `<div style="padding:20px;text-align:center;font-size:12px;color:var(--red)">⚠️ ${escHtml(err.message)}</div>`;
+          document.getElementById('modalNotFound').classList.remove('active');
+        });
+    }, 350);
+  }
+
+  function renderSearchResults(customers) {
+    const container = document.getElementById('searchResults');
+    const notFound = document.getElementById('modalNotFound');
+
+    if (customers.length === 0) {
+      container.innerHTML = '';
+      notFound.classList.add('active');
+      return;
+    }
+
+    notFound.classList.remove('active');
+    container.innerHTML = customers.map(c => {
+      const fn = c.first_name || '';
+      const ln = c.last_name || '';
+      const initials = ((fn[0] || '?') + (ln[0] || '?')).toUpperCase();
+      const tier = fmtTier(c.loyalty_tier_display || c.loyalty_tier_name);
+      const detail = c.email || c.phone || (c.city ? c.city + (c.country_code ? ', ' + c.country_code : '') : '');
+      const ltv = c.total_revenue_l3y ? '$' + Number(c.total_revenue_l3y).toLocaleString('en-US', {maximumFractionDigits:0}) : '';
+      return `<div class="modal-result" onclick="loadCustomerProfile('${escHtml(c.customer_id)}')">
+        <div class="modal-result-avatar">${initials}</div>
+        <div class="modal-result-info">
+          <div class="modal-result-name">${escHtml(fn + ' ' + ln)}</div>
+          <div class="modal-result-detail">${escHtml(detail)}</div>
+        </div>
+        <div style="text-align:right">
+          ${tier ? '<div class="modal-result-tier">✦ ' + escHtml(tier) + '</div>' : ''}
+          ${ltv ? '<div style="font-size:11px;font-weight:700;color:var(--text-sec)">' + ltv + '</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function goToCreate() {
+    closeSearchForce();
+    const searchVal = document.getElementById('searchInput')?.value || '';
+    if (searchVal.includes('@')) document.getElementById('nc-email').value = searchVal;
+    goTo('create');
+  }
+
+  // ─── Customer Profile Loading ───
+  async function loadCustomerProfile(customerId) {
+    closeSearchForce();
+    closePhoneLookup();
+
+    // Show match animation while data loads
+    goTo('match');
+    runMatch();
+
+    try {
+      const resp = await fetch('/api/customers/' + encodeURIComponent(customerId));
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      currentCustomer = data;
+
+      // Reset purchases cache for new customer
+      _purchasesLoaded = null;
+      document.getElementById('purchasesSummary').innerHTML = '';
+      document.getElementById('purchasesList').innerHTML =
+        '<div style="padding:40px;text-align:center;color:var(--text-muted)"><div class="spinner"></div></div>';
+
+      // Populate profile DOM first so it's ready before we navigate
+      populateProfile(data);
+
+      // Update match screen summary, then auto-navigate to profile
+      const fullName = (data.first_name || '') + ' ' + (data.last_name || '');
+      document.getElementById('matchName').textContent = fullName.trim() || '—';
+      document.getElementById('matchEmail').textContent = data.email || data.phone || '';
+      const tier = data.loyalty_tier_display || data.loyalty_tier_name;
+      document.getElementById('matchBadge').textContent = tier ? '✦ ' + tier.toUpperCase() + ' TIER' : '';
+
+      // Navigate to profile once data is populated (skip waiting for button click)
+      goTo('profile');
+    } catch (e) {
+      console.error('Failed to load customer:', e);
+      document.getElementById('matchName').textContent = `Error: ${e.message}`;
+    }
+  }
+
+  function runMatch() {
+    const nD = document.getElementById('node-digital');
+    const nR = document.getElementById('node-retail');
+    const sD = document.getElementById('status-digital');
+    const sR = document.getElementById('status-retail');
+
+    nD.className = 'match-node searching';
+    sD.className = 'match-node-status searching';
+    sD.textContent = 'Searching…';
+
+    setTimeout(() => {
+      nD.className = 'match-node found'; sD.className = 'match-node-status found'; sD.textContent = '✓ Found';
+      nR.className = 'match-node searching'; sR.className = 'match-node-status searching'; sR.textContent = 'Searching…';
+    }, 700);
+    setTimeout(() => {
+      nR.className = 'match-node found'; sR.className = 'match-node-status found'; sR.textContent = '✓ Found';
+    }, 1400);
+    setTimeout(() => document.getElementById('matchResult').classList.add('visible'), 1800);
+    setTimeout(() => {
+      document.getElementById('matchConfidence').classList.add('visible');
+      document.getElementById('confidenceFill').style.width = '97%';
+      document.getElementById('matchConfVal').textContent = '97%';
+    }, 2200);
+    setTimeout(() => document.getElementById('proceedBtn').classList.add('visible'), 2600);
+  }
+
+  function resetMatch() {
+    ['node-digital','node-retail'].forEach(id => document.getElementById(id).className = 'match-node');
+    ['status-digital','status-retail'].forEach(id => { const el = document.getElementById(id); el.className = 'match-node-status'; el.textContent = '…'; });
+    document.getElementById('matchResult').classList.remove('visible');
+    document.getElementById('matchConfidence').classList.remove('visible');
+    document.getElementById('confidenceFill').style.width = '0';
+    document.getElementById('proceedBtn').classList.remove('visible');
+    document.getElementById('matchName').textContent = '—';
+    document.getElementById('matchEmail').textContent = '';
+    document.getElementById('matchBadge').textContent = '';
+  }
+
+  // ─── Profile Population ───
+  function fmtMoney(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    const n = parseFloat(v);
+    if (isNaN(n)) return '—';
+    return '$' + n.toLocaleString('en-US', {maximumFractionDigits: 0});
+  }
+
+  function fmtDate(v) {
+    if (!v) return '—';
+    try { return new Date(v).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}); }
+    catch { return String(v); }
+  }
+
+  function fmtBool(v) {
+    if (v === true  || v === 'true')  return 'Yes ✓';
+    if (v === false || v === 'false') return 'No';
+    return '—';
+  }
+
+  function fmtCount(v) {
+    const n = parseInt(v);
+    return isNaN(n) ? '—' : String(n);
+  }
+
+  function populateProfile(d) {
+    const fn = d.first_name || '';
+    const ln = d.last_name || '';
+    const initials = ((fn[0] || '?') + (ln[0] || '?')).toUpperCase();
+
+    // ── Header ────────────────────────────────────────────────────────
+    document.getElementById('profileAvatar').textContent = initials;
+    document.getElementById('profileName').textContent = (fn + ' ' + ln).trim() || '—';
+    document.getElementById('profileContact').textContent =
+      [d.email, d.phone].filter(Boolean).join(' · ');
+
+    // Tags
+    const tierDisplay = d.loyalty_tier_display || d.loyalty_tier_name || '';
+    let tags = '';
+    if (tierDisplay) tags += `<span class="profile-tag tag-tier">✦ ${escHtml(tierDisplay)}</span>`;
+    if (d.loyalty_enrolled === true || d.loyalty_enrolled === 'true')
+      tags += `<span class="profile-tag tag-vip">Loyalty</span>`;
+    if ((d.domestic_international_customer || '').toLowerCase() === 'international')
+      tags += `<span class="profile-tag tag-intl">Intl</span>`;
+    if (d.omni_geo_segment)
+      tags += `<span class="profile-tag tag-segment">${escHtml(d.omni_geo_segment)}</span>`;
+    document.getElementById('profileTags').innerHTML = tags;
+
+    // ── Resolve measures (live fallbacks for pre-computed RFM nulls) ──
+    // Treat count of 0 as null — 0 means no orders found, same as no data
+    const liveOrderCount = parseInt(d.order_line_fact_order_count) > 0 ? parseInt(d.order_line_fact_order_count) : null;
+    const liveRevenue    = parseFloat(d.order_line_fact_line_revenue_sum) > 0 ? parseFloat(d.order_line_fact_line_revenue_sum) : null;
+    const liveQty        = parseInt(d.order_line_fact_qty_sum) > 0 ? parseInt(d.order_line_fact_qty_sum) : null;
+    const liveRev52w     = d.revenue_last_52_weeks_sum != null ? parseFloat(d.revenue_last_52_weeks_sum) : null;
+
+    const ltv        = d.total_revenue_l3y     != null ? parseFloat(d.total_revenue_l3y)     : (d.total_revenue_l3y_sum != null ? parseFloat(d.total_revenue_l3y_sum) : liveRevenue);
+    const rev52w     = d.revenue_last_52_weeks != null ? parseFloat(d.revenue_last_52_weeks) : liveRev52w;
+    const orderCount = d.total_orders_l3y      != null ? parseInt(d.total_orders_l3y)        : liveOrderCount;
+
+    // ── Hero LTV strip ─────────────────────────────────────────────────
+    document.getElementById('profileLtv').textContent       = fmtMoney(ltv);
+    document.getElementById('profileRev52w').textContent    = fmtMoney(rev52w);
+    document.getElementById('profileOrderCount').textContent = orderCount != null ? String(orderCount) : '—';
+
+    // ── Overview cards ─────────────────────────────────────────────────
+    const days = d.days_since_last_order != null ? parseInt(d.days_since_last_order) : null;
+    document.getElementById('ovDaysSince').textContent = days != null ? days : '—';
+    document.getElementById('ovLastDate').textContent  = d.last_order_date ? 'Last: ' + fmtDate(d.last_order_date) : '';
+
+    document.getElementById('ovOrdersL3y').textContent = orderCount != null ? String(orderCount) : '—';
+    document.getElementById('ovOrders52w').textContent =
+      d.orders_last_52_weeks != null ? '52w: ' + parseInt(d.orders_last_52_weeks) : '';
+
+    document.getElementById('ovTier').textContent         = tierDisplay || 'Not enrolled';
+    document.getElementById('ovLoyaltyStatus').textContent = d.loyalty_enrolled ? 'Enrolled' : 'Not enrolled';
+
+    const locationParts = [d.city, d.state, d.country_code].filter(Boolean);
+    document.getElementById('ovLocation').textContent = locationParts.join(', ') || '—';
+    document.getElementById('ovZip').textContent      = d.zip_code ? 'ZIP: ' + d.zip_code : '';
+
+    // ── Order History card ─────────────────────────────────────────────
+    document.getElementById('ovFirstOrder').textContent    = d.first_order_date    ? fmtDate(d.first_order_date)  : '—';
+    document.getElementById('ovLastOrderFull').textContent = d.last_order_date     ? fmtDate(d.last_order_date)   : '—';
+    document.getElementById('ovRev52w').textContent        = fmtMoney(rev52w);
+    document.getElementById('ovUnits').textContent         = liveQty != null ? String(liveQty) : '—';
+
+    // ── Communication Preferences card ────────────────────────────────
+    const rawChannel = d.preferred_comm_channel || '';
+    document.getElementById('prefChannel').textContent =
+      (rawChannel && rawChannel.toLowerCase() !== 'none') ? rawChannel : '—';
+    document.getElementById('prefTotalChannels').textContent =
+      d.total_channels_subscribed != null ? String(parseInt(d.total_channels_subscribed)) : '—';
+    document.getElementById('prefEmail').textContent         = fmtBool(d.email_subscribed);
+    document.getElementById('prefEmailReachable').textContent =
+      d.email_reachable_count != null ? fmtCount(d.email_reachable_count) : '—';
+    document.getElementById('prefSms').textContent           = fmtBool(d.sms_subscribed);
+    document.getElementById('prefSmsReachable').textContent  =
+      d.sms_reachable_count != null ? fmtCount(d.sms_reachable_count) : '—';
+    document.getElementById('prefPush').textContent          = fmtBool(d.push_enabled);
+    document.getElementById('prefPushReachable').textContent =
+      d.push_reachable_count != null ? fmtCount(d.push_reachable_count) : '—';
+
+    // ── Profile Details card ───────────────────────────────────────────
+    let bdText = '—';
+    if (d.birthdate) {
+      try {
+        const bd = new Date(d.birthdate);
+        const today = new Date();
+        const thisYearBd = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+        if (thisYearBd < today) thisYearBd.setFullYear(today.getFullYear() + 1);
+        const daysTo = Math.round((thisYearBd - today) / 86400000);
+        bdText = bd.toLocaleDateString('en-US', {month:'long', day:'numeric'});
+        if (daysTo <= 30) bdText += ` (${daysTo} days away)`;
+      } catch {}
+    }
+    document.getElementById('prefBirthday').textContent    = bdText;
+    document.getElementById('prefMemberExpiry').textContent =
+      d.membership_expires_at ? fmtDate(d.membership_expires_at) : '—';
+    document.getElementById('prefOmniSeg').textContent    = d.omni_geo_segment    || '—';
+    document.getElementById('prefDigitalSeg').textContent = d.digital_geo_segment || '—';
+    document.getElementById('prefDomIntl').textContent    = d.domestic_international_customer || '—';
+
+    // ── Lapsed alert ───────────────────────────────────────────────────
+    const lapsedEl = document.getElementById('lapsedAlert');
+    if (days != null && days > 60) {
+      document.getElementById('lapsedAlertText').textContent =
+        `Client hasn't ordered in ${days} days — consider outreach.`;
+      lapsedEl.style.display = 'flex';
+    } else {
+      lapsedEl.style.display = 'none';
+    }
+
+    // Incomplete profile notice — show when no purchase data exists at all
+    const noHistory = !ltv && !orderCount && !d.last_order_date;
+    document.getElementById('incompleteAlert').style.display = noHistory ? 'flex' : 'none';
+
+    // SA Intel
+    const intel = d._intel || {};
+    const starters = intel.starters || [];
+    document.getElementById('intelStarters').innerHTML = starters.length
+      ? starters.map((s, i) =>
+          `<div class="intel-card${i < 2 ? ' highlight' : ''}">
+            <div class="intel-opener">
+              <div class="intel-opener-icon">${s.icon || '💡'}</div>
+              <div class="intel-opener-text">${s.text}</div>
+            </div>
+          </div>`
+        ).join('')
+      : '<div class="intel-card"><div class="intel-opener"><div class="intel-opener-text">No specific conversation starters generated.</div></div></div>';
+
+    const signals = intel.signals || [];
+    document.getElementById('intelSignals').innerHTML = signals.length
+      ? signals.map(s =>
+          `<div class="intel-signal">
+            <div class="intel-dot" style="background:${escHtml(s.color)}"></div>
+            <div class="intel-signal-text">${s.text}</div>
+          </div>`
+        ).join('')
+      : '<div class="intel-signal"><div class="intel-dot" style="background:var(--text-muted)"></div><div class="intel-signal-text">No behavioral signals available.</div></div>';
+
+    const dos = intel.dos || [];
+    const donts = intel.donts || [];
+    document.getElementById('intelDos').innerHTML =
+      '<div class="intel-box-title">✓ Do</div>' + dos.map(d => `<div>• ${escHtml(d)}</div>`).join('');
+    document.getElementById('intelDonts').innerHTML =
+      '<div class="intel-box-title">✗ Don\'t</div>' + donts.map(d => `<div>• ${escHtml(d)}</div>`).join('');
+
+    // Sync timestamp
+    document.getElementById('profileSyncTime').textContent = 'Last synced: just now';
+  }
+
+  // ─── Purchases Tab ───
+  let _purchasesLoaded = null; // customer_id whose purchases are cached
+
+  const _CAT_ICON = {
+    'Tanks':'👕','Leggings':'🩱','Bras':'🩲','Shorts':'🩳','Hoodies':'🧥',
+    'Jackets':'🧥','Pants':'👖','Dresses':'👗','Skirts':'👗','Swimwear':'🩱',
+    'Accessories':'👜','Bags':'👜','Hats':'🧢','Socks':'🧦','Shoes':'👟',
+    'Mats':'🧘','Equipment':'🏋️','Body':'🧴','Skincare':'🧴','Wellness':'💊',
+    'Sunglasses':'🕶️','Jewelry':'💎','Gifting':'🎁','Gift':'🎁',
+    'Tops':'👕','Sets':'🩱','Outerwear':'🧥','Fleece':'🧥',
+  };
+
+  function _purchaseIcon(category, name) {
+    if (!category && !name) return '🛍️';
+    // Check category first
+    for (const [k, v] of Object.entries(_CAT_ICON)) {
+      if ((category || '').toLowerCase().includes(k.toLowerCase())) return v;
+    }
+    // Fall back to product name keywords
+    const n = (name || '').toLowerCase();
+    if (n.includes('bag') || n.includes('tote')) return '👜';
+    if (n.includes('mat')) return '🧘';
+    if (n.includes('sock')) return '🧦';
+    if (n.includes('lotion') || n.includes('oil') || n.includes('serum') || n.includes('balm') || n.includes('glow')) return '🧴';
+    if (n.includes('sunglass') || n.includes('sunnie')) return '🕶️';
+    if (n.includes('hat') || n.includes('beanie') || n.includes('cap')) return '🧢';
+    if (n.includes('shoe') || n.includes('sneaker')) return '👟';
+    if (n.includes('jacket') || n.includes('hoodie') || n.includes('coat') || n.includes('fleece') || n.includes('puffer')) return '🧥';
+    if (n.includes('legging') || n.includes('tight')) return '🩱';
+    if (n.includes('short')) return '🩳';
+    if (n.includes('bra') || n.includes('tank')) return '🩲';
+    if (n.includes('bundle') || n.includes('set') || n.includes('gift')) return '🎁';
+    return '🛍️';
+  }
+
+  async function loadPurchases() {
+    if (!currentCustomer) return;
+    const cid = currentCustomer.customer_id;
+    if (_purchasesLoaded === cid) return; // already loaded for this customer
+
+    document.getElementById('purchasesList').innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--text-muted)"><div class="spinner"></div></div>';
+    document.getElementById('purchasesSummary').innerHTML = '';
+
+    try {
+      const resp = await fetch('/api/customers/' + encodeURIComponent(cid) + '/purchases');
+      const data = await resp.json();
+
+      if (!resp.ok) throw new Error(data.error || 'Failed');
+
+      const { purchases, summary } = data;
+      _purchasesLoaded = cid;
+
+      // Summary chips
+      document.getElementById('purchasesSummary').innerHTML = [
+        `<span class="purchase-chip">🛍️ ${summary.total_orders} orders</span>`,
+        `<span class="purchase-chip">🌍 ${summary.total_countries} ${summary.total_countries === 1 ? 'country' : 'countries'}</span>`,
+        `<span class="purchase-chip">📡 ${summary.total_channels} ${summary.total_channels === 1 ? 'channel' : 'channels'}</span>`,
+      ].join('');
+
+      if (!purchases.length) {
+        document.getElementById('purchasesList').innerHTML =
+          '<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">No purchase history found.</div>';
+        return;
+      }
+
+      document.getElementById('purchasesList').innerHTML = purchases.map(p => {
+        const icon = _purchaseIcon(p.category, p.product_title);
+        const date = p.order_date ? new Date(p.order_date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
+        const meta = [
+          `<span class="purchase-badge badge-${p.channel}">${p.channel}</span>`,
+          p.flag,
+          date,
+          p.location ? `· ${escHtml(p.location)}` : '',
+        ].filter(Boolean).join(' ');
+        const price = p.price != null ? '$' + p.price.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}) : '';
+        return `<div class="purchase-row">
+          <div class="purchase-icon">${icon}</div>
+          <div class="purchase-info">
+            <div class="purchase-name">${escHtml(p.product_title)}</div>
+            <div class="purchase-meta">${meta}</div>
+          </div>
+          <div class="purchase-price">${price}</div>
+        </div>`;
+      }).join('');
+
+    } catch (e) {
+      document.getElementById('purchasesList').innerHTML =
+        `<div style="padding:32px;text-align:center;color:var(--red);font-size:13px">⚠️ ${escHtml(e.message)}</div>`;
+    }
+  }
+
+  // ─── Phone Lookup ───
+  function openPhoneLookup() {
+    document.getElementById('phoneLookupOverlay').classList.add('active');
+    document.getElementById('phoneInput').value = '';
+    document.getElementById('phoneLookupResult').innerHTML = '';
+    setTimeout(() => document.getElementById('phoneInput').focus(), 300);
+  }
+
+  function closePhoneLookup() {
+    document.getElementById('phoneLookupOverlay').classList.remove('active');
+  }
+
+  async function submitPhoneLookup() {
+    const phone = document.getElementById('phoneInput').value.trim();
+    if (!phone) return;
+
+    const resultEl = document.getElementById('phoneLookupResult');
+    resultEl.innerHTML = '<div class="spinner"></div>';
+
+    try {
+      const resp = await fetch('/api/customers/lookup/phone?phone=' + encodeURIComponent(phone));
+      const data = await resp.json();
+      const customers = data.customers || [];
+
+      if (customers.length === 0) {
+        resultEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px">No customer found for this number.</div>';
+        return;
+      }
+
+      // Show results inline, allow tap to navigate
+      resultEl.innerHTML = customers.map(c => {
+        const fn = c.first_name || '';
+        const ln = c.last_name || '';
+        const initials = ((fn[0] || '?') + (ln[0] || '?')).toUpperCase();
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;border-top:1px solid var(--border)"
+                     onclick="loadCustomerProfile('${escHtml(c.customer_id)}')">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${initials}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600">${escHtml(fn + ' ' + ln)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${escHtml(c.email || '')} ${c.loyalty_tier_name ? '· ✦ ' + c.loyalty_tier_name : ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      resultEl.innerHTML = '<div style="font-size:12px;color:var(--red);text-align:center;padding:8px">Error searching. Is the backend running?</div>';
+    }
+  }
+
+  // ─── Create Client ───
+  function saveNewClient() {
+    const first = document.getElementById('nc-first').value.trim();
+    const last = document.getElementById('nc-last').value.trim();
+    const email = document.getElementById('nc-email').value.trim();
+
+    if (!first || !last || !email) {
+      ['nc-first','nc-last','nc-email'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el.value.trim()) { el.style.background = 'var(--red-light)'; setTimeout(() => el.style.background = '', 2000); }
+      });
+      return;
+    }
+
+    const overlay = document.getElementById('createSuccess');
+    document.getElementById('successName').textContent = first + ' ' + last;
+    overlay.classList.add('active');
+    setTimeout(() => { overlay.classList.remove('active'); goTo('scan'); }, 2200);
+  }
+
+  // ─── Settings ───
+  async function checkCubeStatus() {
+    const el = document.getElementById('cubeStatus');
+    el.textContent = 'Checking…';
+    el.className = 'set-badge';
+    try {
+      const resp = await fetch('/api/customers/search?q=test', {signal: AbortSignal.timeout(5000)});
+      if (resp.ok || resp.status === 200) {
+        el.textContent = 'Connected';
+        el.className = 'set-badge set-badge-green';
+      } else {
+        el.textContent = 'Error ' + resp.status;
+        el.className = 'set-badge';
+        el.style.background = 'var(--red-light)';
+        el.style.color = 'var(--red)';
+      }
+    } catch (e) {
+      el.textContent = 'Unavailable';
+      el.className = 'set-badge';
+      el.style.background = 'var(--red-light)';
+      el.style.color = 'var(--red)';
+    }
+  }
+
+  // ─── Utility ───
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+</script>
+</body>
+</html>
